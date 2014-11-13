@@ -1,0 +1,6 @@
+- clean up the code
+- better documentation
+- rework the info/error message stuff
+- the command parser is extremely ugly, needs heavy rework
+- add functionality to up/download firmware/memory to/from the chip
+- ...
