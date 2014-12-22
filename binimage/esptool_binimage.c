@@ -129,10 +129,10 @@ int binimage_prepare(char *fname, uint32_t entry)
     
     if(fname[0])
     {
-        b_image.image_file = fopen( fname, "wb");
+        b_image.image_file = fopen(fname, "wb");
         if(b_image.image_file == NULL)
         {
-            info_printf(-1, "cant open binimage file \"%s\" for writing, aborting\r\n", fname);
+            LOGERR("cant open binimage file \"%s\" for writing, aborting", fname);
             return 0;
         }
     }
@@ -143,7 +143,7 @@ int binimage_prepare(char *fname, uint32_t entry)
     
     b_image.segments = 0;
     
-    info_printf(2, "created structure for binimage \"%s\" with entry address 0x%08X\r\n", fname, b_image.entry);
+    LOGINFO("created structure for binimage \"%s\" with entry address 0x%08X", fname, b_image.entry);
     
     return 1;
 }
@@ -151,7 +151,7 @@ int binimage_prepare(char *fname, uint32_t entry)
 void bimage_set_entry(uint32_t entry)
 {
     b_image.entry = entry;
-    info_printf(2, "set bimage entry to 0x%08X\r\n", b_image.entry);
+    LOGINFO("set bimage entry to 0x%08X", b_image.entry);
 }
 
 int binimage_write_close(uint32_t padsize)
@@ -168,7 +168,7 @@ int binimage_write_close(uint32_t padsize)
     
     if(fwrite((unsigned char*)&b_image, 1, 8, b_image.image_file) != 8)
     {
-        info_printf(-1, "cant write main header to binimage file, aborting\r\n");
+        LOGERR("cant write main header to binimage file, aborting");
         fclose(b_image.image_file);
         b_image.image_file = 0;
         return 0;
@@ -180,7 +180,7 @@ int binimage_write_close(uint32_t padsize)
     {
         if(fwrite((unsigned char*)&b_image.segments[cnt], 1, 8, b_image.image_file) != 8)
         {
-            info_printf(-1, "cant write header for segment  #%i to binimage file, aborting\r\n", cnt);
+            LOGERR("cant write header for segment  #%i to binimage file, aborting", cnt);
             fclose(b_image.image_file);
             b_image.image_file = 0;
             return 0;
@@ -190,7 +190,7 @@ int binimage_write_close(uint32_t padsize)
         
         if(fwrite(b_image.segments[cnt].data, 1, b_image.segments[cnt].size, b_image.image_file) != b_image.segments[cnt].size)
         {
-            info_printf(-1, "cant write data block for segment  #%i to binimage file, aborting\r\n", cnt);
+            LOGERR("cant write data block for segment  #%i to binimage file, aborting", cnt);
             fclose(b_image.image_file);
             b_image.image_file = 0;
             return 0;
@@ -209,7 +209,7 @@ int binimage_write_close(uint32_t padsize)
     {
         if(fputc(0x00, b_image.image_file) == EOF)
         {
-            info_printf(-1, "cant write padding byte 0x00 at 0x%08X to binimage file, aborting\r\n", total_size);
+            LOGERR("cant write padding byte 0x00 at 0x%08X to binimage file, aborting", total_size);
             fclose(b_image.image_file);
             b_image.image_file = 0;
             return 0;
@@ -219,13 +219,13 @@ int binimage_write_close(uint32_t padsize)
     
     if(fputc(chksum, b_image.image_file) == EOF)
     {
-        info_printf(-1, "cant write checksum byte 0x%02X at 0x%08X to binimage file, aborting\r\n", chksum, total_size);
+        LOGERR("cant write checksum byte 0x%02X at 0x%08X to binimage file, aborting", chksum, total_size);
         fclose(b_image.image_file);
         b_image.image_file = 0;
         return 0;
     }
 
-    info_printf(2, "saved binimage file, total size is %i bytes, checksum byte is 0x%02X\r\n", total_size, chksum);
+    LOGINFO("saved binimage file, total size is %i bytes, checksum byte is 0x%02X", total_size, chksum);
     
     fclose(b_image.image_file);
     b_image.image_file = 0;
@@ -236,13 +236,13 @@ int binimage_write_close(uint32_t padsize)
         {
             if(b_image.segments[cnt].data)
             {
-                info_printf(2, "releasing memory used for segment %i in binimage\r\n", cnt);
+                LOGDEBUG("releasing memory used for segment %i in binimage", cnt);
                 free(b_image.segments[cnt].data);
             }
         }
         if(b_image.segments)
         {
-            info_printf(2, "releasing memory used for binimage segment pointers\r\n");
+            LOGDEBUG("releasing memory used for binimage segment pointers");
             free(b_image.segments);
         }
     }

@@ -44,13 +44,13 @@ int main(int argc, char **argv)
     
     if(argc < 2)
     {
-        printf("**ERROR: No arguments given. Exiting...\r\n\r\n");
+        LOGERR("No arguments given");
         return 0;
     }
 
     infohelper_set_argverbosity(num_args, arg_ptr);
     
-    info_printf(1, "esptool v0.0.3a - (c) 2014 Ch. Klippel <ck@atelier-klippel.de>\r\n");
+    LOGINFO("esptool v0.0.3a - (c) 2014 Ch. Klippel <ck@atelier-klippel.de>");
     
     while(num_args)
     {
@@ -63,8 +63,8 @@ int main(int argc, char **argv)
         num_args -= num_args_parsed;
         arg_ptr += num_args_parsed;
     }
+    
 
-    printf("\r\n");
     close_elf_object();
     binimage_write_close(16);
     return 0;

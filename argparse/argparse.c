@@ -40,7 +40,7 @@ int parse_arg(int num_args, char **arg_ptr)
         {
             // ELF file related commands
             case 'd':
-                info_printf(0, "USING -d IS DEPRECATED, USE -es INSTEAD. FIXING COMMAND\r\n");
+                LOGWARN("USING -d IS DEPRECATED, USE -es INSTEAD. FIXING COMMAND");
                 arg_ptr[0][1] = 'e';
                 arg_ptr[0][2] = 's';
             case 'e':

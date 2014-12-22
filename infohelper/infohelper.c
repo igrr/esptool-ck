@@ -24,59 +24,9 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "infohelper.h"
 
-const char heartbeat[] = { "-\\|/-\\|/" };
-static unsigned int beat = 0;
-static char infolevel  = 1;
-
-int info_printf(int error, const char *format, ...) 
-{
-    va_list v;
-    int done = 0;
-
-    va_start(v, format);
-
-    if(error < 0)
-    {
-        if(error > -100)
-        {
-            printf("** ERROR: ");
-            done = vprintf(format, v);
-        }
-#ifdef DEBUG
-        else if(error == -100)
-        {
-            printf(">> DEBUG: ");
-            done = vprintf(format, v);
-        }
-#endif
-    }
-    else if(error == 0)
-    {
-        printf("** Warning: ");
-        done = vprintf(format, v);
-    }
-    else if(infolevel >= error)
-    {
-        printf("Info: ");
-        done = vprintf(format, v);
-    }
-    else if(error > 100)
-    {
-        error -= 100;
-        if(infolevel >= error)
-        {
-            done = vprintf(format, v);
-        }
-    }
-    
-    va_end(v);
-    fflush(stdout);
-    return done;
-}
-
-
-
+static char infolevel = 1;
 
 void infohelper_set_infolevel(char lvl)
 {
@@ -95,7 +45,7 @@ void infohelper_set_argverbosity(int num_args, char **arg_ptr)
 {
     char *cur_arg;
 
-    infolevel = 0;
+    infolevel = 2;
     
     while(num_args--)
     {
@@ -116,57 +66,29 @@ void infohelper_set_argverbosity(int num_args, char **arg_ptr)
     }
 }
 
-void infohelper_print_progress(char *msg, float cval, float maxval)
+void infohelper_output(int loglevel, const char* format, ...)
 {
-    unsigned int cur, cnt;
-
-    if(cval == 0)
-    {
-        beat = 0;
-    }
+    if (infolevel < loglevel)
+        return;
+    const char* log_level_names[] = {"Error: ", "Warning: ", "", "\t", "\t\t"};
+    const int log_level_names_count = sizeof(log_level_names) / sizeof(const char*);
+    if (loglevel >= log_level_names_count)
+        loglevel = log_level_names_count - 1;
     
-    cur = (35 / maxval) * cval;
+    va_list v;
+    printf("%s", log_level_names[loglevel]);
+    va_start(v, format);
+    vprintf(format, v);
+    va_end(v);
+    printf("\n");
+}
 
-    cnt = 35-cur;
-    
-    if(msg)
-    {
-        info_printf(1, "%s: [", msg);
-    }
-    else
-    {
-        info_printf(1, "[");
-    }
-
-    while(cur--)
-    {
-        info_printf(101, "*");
-    }
-
-    if(cnt)
-    {
-        if(cval)
-        {
-            info_printf(101, "%c",heartbeat[beat]);
-        }
-        else
-        {
-            info_printf(101, " ");
-        }
-    }
-    else
-    {
-        info_printf(101, "*");
-    }
-
-    while(cnt--)
-    {
-        info_printf(101, " ");
-    }
-
-    info_printf(101, "\b]\r");
-    fflush(stdout);
-    
-    beat++;
-    beat &= 0x07;
+void infohelper_output_plain(int loglevel, const char* format, ...)
+{
+    if (infolevel < loglevel)
+        return;
+    va_list v;
+    va_start(v, format);
+    vprintf(format, v);
+    va_end(v);
 }

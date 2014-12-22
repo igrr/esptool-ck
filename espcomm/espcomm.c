@@ -125,18 +125,18 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
     
     serialport_send_C0();
 
-    info_printf(-100, "espcomm_cmd: sending command header\r\n");
+    LOGDEBUG("espcomm_cmd: sending command header");
     
     serialport_send_slip((unsigned char*)&send_packet, 8);
     
     if(data_size)
     {
-        info_printf(-100, "espcomm_cmd: sending command payload\r\n");
+        LOGDEBUG("espcomm_cmd: sending command payload");
         serialport_send_slip(data, data_size);
     }
     else
     {
-        info_printf(-100, "espcomm_cmd: no payload\r\n");
+        LOGDEBUG("espcomm_cmd: no payload");
     }
     
     serialport_send_C0();
@@ -149,7 +149,7 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
         {
             if(receive_packet.size)
             {
-                info_printf(-100, "espcomm cmd: receiving %i bytes of data\r\n", receive_packet.size);
+                LOGDEBUG("espcomm cmd: receiving %i bytes of data", receive_packet.size);
                 if(receive_packet.data)
                 {
                     free(receive_packet.data);
@@ -160,17 +160,16 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
                 
                 if(serialport_receive_slip(receive_packet.data, receive_packet.size) == 0)
                 {
-                    info_printf(-100, "espcomm_cmd: cant receive slip payload data\r\n");
+                    LOGDEBUG("espcomm_cmd: cant receive slip payload data");
                     return 0;
                 }
                 else
                 {
-                    info_printf(-100, "espcomm_cmd: received %x bytes: ", receive_packet.size);
+                    LOGDEBUG("espcomm_cmd: received %x bytes: ", receive_packet.size);
                     for(cnt = 0; cnt < receive_packet.size; cnt++)
                     {
-                        info_printf(-100, "0x%02X ", receive_packet.data[cnt]);
+                        LOGVERBOSE("0x%02X ", receive_packet.data[cnt]);
                     }
-                    info_printf(-100, "\r\n");
                 }
             }
             
@@ -179,64 +178,29 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
                 if(receive_packet.direction == 0x01 &&
                     receive_packet.command == command)
                 {
-                    info_printf(-100, "** 0x%08X 0x%04X >> 0x%08X 0x%04X ** ", receive_packet.response, receive_packet.uint16_data[0], responses[command].cmd_response, responses[command].payload_response);
-                    
-                    if(receive_packet.response == responses[command].cmd_response)
-                    {
-                        if(receive_packet.size)
-                        {
-                            if(receive_packet.uint16_data[0] == responses[command].payload_response)
-                            {
-                                result = 1;
-                            }
-                            else
-                            {
-                                info_printf(-100, "wrong payload response\r\n");
-                                result = 0;
-                            }
-                        }
-                        else
-                        {
-                            result = 1;
-                        }
-                    }
-                    else
-                    {
-                        info_printf(-100, "wrong cmd response\r\n");
-                        result = 0;
-                    }
+                    result = receive_packet.response;
                 }
                 else
                 {
-                    info_printf(-100,  "espcomm cmd: wrong direction/command: 0x%02X 0x%02X\r\n", receive_packet.direction, receive_packet.command);
+                    LOGWARN("espcomm cmd: wrong direction/command: 0x%02X 0x%02X", receive_packet.direction, receive_packet.command);
                 }
-
-#ifdef DEBUG                
-                printf("CMD 0x%02X - RESP 0x%08X", command, receive_packet.response);
-                if(receive_packet.size)
-                {
-                    printf(" - PAYLOAD ");
-                    for(cnt = 0; cnt < receive_packet.size; cnt++)
-                    {
-                        printf("0x%02X ", receive_packet.data[cnt]);
-                    }
-                    printf("\r\n");
-                }
-#endif                
-                
             }
             else
             {
-                info_printf(-100, "espcomm cmd: no final C0\r\n");
+                LOGWARN("espcomm cmd: no final C0");
             }
         }
         else
         {
-            info_printf(-100, "espcomm cmd: can't receive command header response\r\n");
+            LOGWARN("espcomm cmd: can't receive command header response");
         }
     }
+    else
+    {
+        LOGDEBUG("espcomm cmd: didn't receive C0");
+    }
     
-    info_printf(-100, "espcomm_cmd: response 0x%08X\r\n", result);
+    LOGDEBUG("espcomm cmd: response 0x%08X", result);
     return result;
 }
 
@@ -276,7 +240,7 @@ int espcomm_open(void)
     
     if(serialport_open(espcomm_port, espcomm_baudrate))
     {
-       info_printf(3, "opening bootloader!\r\n");
+       LOGINFO("opening bootloader");
         return espcomm_sync();
     }
     
@@ -285,29 +249,30 @@ int espcomm_open(void)
 
 void espcomm_close(void)
 {
-    info_printf(3, "closing bootloader!\r\n");
+    LOGINFO("closing bootloader");
     espcomm_reset_to_exec();
     serialport_close();
 }
 
 int espcomm_start_flash(uint32_t size, uint32_t address)
 {
+    uint32_t res;
+    
     flash_packet[0] = size;
     flash_packet[1] = 0x00000200;
     flash_packet[2] = BLOCKSIZE_FLASH;
     flash_packet[3] = address;
     
     send_packet.checksum = espcomm_calc_checksum((unsigned char*) flash_packet, 16);
-    return espcomm_send_command(FLASH_DOWNLOAD_BEGIN, (unsigned char*) &flash_packet, 16);
+    res = espcomm_send_command(FLASH_DOWNLOAD_BEGIN, (unsigned char*) &flash_packet, 16);
+    return res;
 }
 
-void espcom_progress(char *msg, uint32_t current, uint32_t max)
-{
-    
-}
 
 int espcomm_upload_file(char *name)
 {
+    int reboot_when_done = 0;
+    LOGDEBUG("espcomm_upload_file");
     FILE *f;
     struct stat st;
     uint32_t fsize;
@@ -319,9 +284,11 @@ int espcomm_upload_file(char *name)
     
     if(stat(name, &st) == 0)
     {
+        LOGDEBUG("stat %s success", name);
         if(espcomm_open())
         {
-            fsize = st.st_size;
+            LOGDEBUG("espcomm_open");
+            fsize = (uint32_t) st.st_size;
 
             f = fopen( name, "rb");
             
@@ -336,19 +303,18 @@ int espcomm_upload_file(char *name)
                 ftotal = fsize;
                 fdone = 0;
 
-                info_printf(1, "uploading %i bytes from %s to flash at 0x%08X\r\n", fsize, name, espcomm_address);
-            
+                LOGINFO("uploading %i bytes from %s to flash at 0x%08X", fsize, name, espcomm_address);
 
-                infohelper_print_progress("Erasing Flash", 0, ftotal);
+                LOGINFO("erasing flash");
                 serialport_set_timeout(1000);
                 espcomm_start_flash(fsize, espcomm_address);
                 serialport_set_timeout(1);
                 
-                infohelper_print_progress("Writing Flash", 0, ftotal);
+                LOGINFO("writing flash");
                 
                 while(fsize)
                 {
-                    flash_packet[0] = fread(&flash_packet[4], 1, BLOCKSIZE_FLASH, f);
+                    flash_packet[0] = (uint32_t) fread(&flash_packet[4], 1, BLOCKSIZE_FLASH, f);
                     fsize -= flash_packet[0];
             
                     flash_packet[1] = cnt;
@@ -369,22 +335,28 @@ int espcomm_upload_file(char *name)
                     
                     cnt++;
                     fdone += flash_packet[0];
-                    
-                    infohelper_print_progress("Writing Flash", fdone, ftotal);
-
-                    
+                    INFO(".");
+                    fflush(stdout);
                 }
-                
-                flash_packet[0] = 0;
+                INFO("\n");
+                flash_packet[0] = (reboot_when_done)?0:1;
                 res = espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) &flash_packet, 4);
-
-                info_printf(101, "\r\n");
+//                iprintf(101, "");
             }
             
             fclose(f);
             espcomm_close();
             return 1;
         }
+        else
+        {
+            LOGERR("espcomm_open failed");
+        }
+            
+    }
+    else
+    {
+        LOGERR("stat %s failed", name);
     }
     
     return 0;
@@ -393,21 +365,23 @@ int espcomm_upload_file(char *name)
 
 int espcomm_set_port(char *port)
 {
-    info_printf(4, "setting port from %s to %s\r\n", espcomm_port, port);
+    LOGDEBUG("setting port from %s to %s", espcomm_port, port);
     espcomm_port = port;
     return 1;
 }
 
 int espcomm_set_baudrate(const char *baudrate)
 {
-    info_printf(4, "setting baudrate from %i to %i\r\n", espcomm_baudrate, (unsigned int)strtol(baudrate, NULL, 10));
-    espcomm_baudrate = strtol(baudrate, NULL, 10);
+    uint32_t new_baudrate = (uint32_t) strtol(baudrate, NULL, 10);
+    LOGDEBUG("setting baudrate from %i to %i", espcomm_baudrate, new_baudrate);
+    espcomm_baudrate = new_baudrate;
     return 1;
 }
 
 int espcomm_set_address(const char *address)
 {
-    info_printf(4, "setting address from 0x%08X to 0x%08X\r\n", espcomm_address, (unsigned int)strtol(address, NULL, 16));
-    espcomm_address = strtol(address, NULL, 16);
+    uint32_t new_address = (uint32_t) strtol(address, NULL, 16);
+    LOGDEBUG("setting address from 0x%08X to 0x%08X", espcomm_address, new_address);
+    espcomm_address = new_address;
     return 1;
 }

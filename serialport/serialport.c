@@ -105,12 +105,14 @@ void serialport_set_timeout(unsigned int timeout)
         term.c_cc[VMIN]  = 0;
         term.c_cc[VTIME] = timeout;
 
-        info_printf(4, "setting timeout %i\r\n", timeout);
+        LOGDEBUG("setting timeout %i", timeout);
         
         if (tcsetattr(serial_port, TCSANOW, &term)!=0)
         {
-            info_printf(4, "set timeout failed\r\n");
+            LOGDEBUG("set timeout failed");
         }
+        
+        LOGDEBUG("done");
         
         old_timeout = timeout;
     }
@@ -122,18 +124,14 @@ int serialport_open(char *device, unsigned int baudrate)
     
     if(serial_port<0) 
     {
-        info_printf(-1, "cannot acces %s\n",device);
-        return serial_port;
-    }
-
-    serialport_set_dtr(1);
-    serialport_set_rts(1);
-
-    if(tcgetattr(serial_port,&term) != 0)
-    {
-        info_printf(-1, "Initial getattr failed\r\n");
+        LOGERR("cannot access %s\n",device);
         return 0;
     }
+
+    serialport_set_dtr(0);
+
+    LOGDEBUG("tcgetattr");
+    tcgetattr(serial_port,&term);
 
     serialport_set_baudrate(baudrate);
 
@@ -158,16 +156,17 @@ int serialport_open(char *device, unsigned int baudrate)
     
     
     
+    LOGDEBUG("tcsetattr");
     if (tcsetattr(serial_port, TCSANOW, &term)!=0)
     {
-        info_printf(-1, "setattr stage 1 failed");
+        LOGERR("setattr stage 1 failed");
         return 0;
     }
 
     
     if (tcgetattr(serial_port, &term)!=0)
     {
-        info_printf(-1, "getattr failed");
+        LOGERR("getattr failed");
         return 0;
     }
     
@@ -175,10 +174,10 @@ int serialport_open(char *device, unsigned int baudrate)
     
     if (tcsetattr(serial_port, TCSANOW, &term)!=0)
     {
-        info_printf(-1, "setattr stage 2 failed");
+        LOGERR("setattr stage 2 failed");
         return 0;
     }
-    
+    LOGDEBUG("serial open");
     return serial_port;
 }
 
@@ -199,7 +198,7 @@ int serialport_send_slip(unsigned char *data, unsigned int size)
         {
             if(write(serial_port, subst_C0, 2) != 2)
             {
-                info_printf(-1, "failed substituting 0xC0\r\n");
+                LOGERR("failed substituting 0xC0");
                 return 0;
             }
         }
@@ -207,7 +206,7 @@ int serialport_send_slip(unsigned char *data, unsigned int size)
         {
             if(write(serial_port, subst_DB, 2) != 2)
             {
-                info_printf(-1, "failed substituting 0xDB\r\n");
+                LOGERR("failed substituting 0xDB");
                 return 0;
             }
         }
@@ -215,7 +214,7 @@ int serialport_send_slip(unsigned char *data, unsigned int size)
         {
             if(write(serial_port, &cur_byte, 1) != 1)
             {
-                info_printf(-1, "failed sending byte %i\r\n", sent);
+                LOGERR("failed sending byte %i", sent);
                 return 0;
             }
         }
@@ -238,7 +237,7 @@ int serialport_receive_slip(unsigned char *data, unsigned int size)
     {
         if(read(serial_port, &cur_byte, 1) != 1)
         {
-            info_printf(-1, "failed reading byte\r\n");
+            LOGERR("failed reading byte");
             return 0;
         }
         
@@ -246,7 +245,7 @@ int serialport_receive_slip(unsigned char *data, unsigned int size)
         {
             if(read(serial_port, &cur_byte, 1) != 1)
             {
-                info_printf(-1, "failed reading byte for unslip\r\n");
+                LOGERR("failed reading byte for unslip");
                 return 0;
             }
             
@@ -260,7 +259,7 @@ int serialport_receive_slip(unsigned char *data, unsigned int size)
             }
             else
             {
-                info_printf(-1, "unslip sequence wrong\r\n");
+                LOGERR("unslip sequence wrong");
                 return 0;
             }
         }
@@ -283,7 +282,7 @@ int serialport_send_C0(void)
     
     if(write(serial_port, &b, 1) != 1)
     {
-        info_printf(-1, "failed sending 0xC0\r\n");
+        LOGERR("failed sending 0xC0");
         return 0;
     }
     serialport_drain();

@@ -26,12 +26,33 @@
 #define INFOHELPER_H
 
 /*
-** print an info/warning/error string
-** warnings (error = 0) and errors (error < 0) are printed always
-** any messages with error > 0 are printed only if error is <= the current infolevel
+** some defines needed to make an overloaded printf() suitable for
+** info messages with selectable verbosity.
 */
-int info_printf(int error, const char *fromat, ...) __attribute__ ((format (printf, 2, 3)));
-        
+
+//
+//#define printf_4        printf_3
+//#define printf_5        printf_3
+//#define printf_6        printf_3
+//#define printf_7        printf_3
+//#define printf_8        printf_3
+//#define printf_9        printf_3
+//#define printf_10       printf_3
+//
+//#define COUNT_PARMS2(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _, ...) _
+//#define COUNT_PARMS(...)\
+//        COUNT_PARMS2(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+//
+//#define CAT(A, B) CAT2(A, B)
+//#define CAT2(A, B) A ## B
+//
+//#define iprintf(...)\
+//        CAT(printf_, COUNT_PARMS(__VA_ARGS__))(__VA_ARGS__)
+//
+//int printf_1(int err);
+//int printf_2(int error, char *string);
+//int printf_3(int error, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
+
 /*
 ** set verbositiy level
 ** 0 = only error messages
@@ -51,6 +72,15 @@ void infohelper_increase_infolevel(void);
 */
 void infohelper_set_argverbosity(int num_args, char **arg_ptr);
 
-void infohelper_print_progress(char *msg, float cval, float maxval);
+void infohelper_output(int loglevel, const char* format, ...);
+void infohelper_output_plain(int loglevel, const char* format, ...);
+
+#define LOGERR(...) infohelper_output(0, __VA_ARGS__)
+#define LOGWARN(...) infohelper_output(1, __VA_ARGS__)
+#define LOGINFO(...) infohelper_output(2, __VA_ARGS__)
+#define LOGDEBUG(...) infohelper_output(3, __VA_ARGS__)
+#define LOGVERBOSE(...) infohelper_output(4, __VA_ARGS__)
+
+#define INFO(...) infohelper_output_plain(2, __VA_ARGS__)
 
 #endif
