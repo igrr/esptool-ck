@@ -1,5 +1,5 @@
-TARGET_ARCH	= LINUX
-CFLAGS		= -Os
+TARGET_ARCH	?= LINUX
+CFLAGS		= -std=c99 -Os -Wall
 SDK_LIBDIR	=
 SDK_LIBS	=
 SDK_INCLUDES	=
@@ -18,11 +18,13 @@ SRC		:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
 OBJ		:= $(patsubst %.c,build/%.o,$(SRC))
 INCLUDES	:= $(addprefix -I,$(SRC_DIR))
 
+CFLAGS += $(TARGET_CFLAGS)
+
 vpath %.c $(SRC_DIR)
 
 define make-goal
 $1/%.o: %.c
-	$(CC) $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) -D$(TARGET_ARCH) -Wall -c $$< -o $$@
+	$(CC) $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) -D$(TARGET_ARCH) -c $$< -o $$@
 endef
 
 .PHONY: all checkdirs clean

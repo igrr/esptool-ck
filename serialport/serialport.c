@@ -82,7 +82,7 @@ void serialport_set_baudrate(unsigned int baudrate)
             cfsetispeed(&term,B230400);
             cfsetospeed(&term,B230400);
             break;
-            
+#ifndef __APPLE__
         case 460800:
             cfsetispeed(&term,B460800);
             cfsetospeed(&term,B460800);
@@ -92,7 +92,7 @@ void serialport_set_baudrate(unsigned int baudrate)
             cfsetispeed(&term,B921600);
             cfsetospeed(&term,B921600);
             break;
-            
+#endif
         default:
             break;
     }
@@ -120,13 +120,23 @@ void serialport_set_timeout(unsigned int timeout)
 
 int serialport_open(char *device, unsigned int baudrate)
 {
-    serial_port = open(device,O_RDWR);
+    LOGINFO("opening port %s at %d", device, baudrate);
+    int flags = O_RDWR | O_NOCTTY;
+#ifdef __APPLE__
+    flags |= O_NONBLOCK;
+#endif
+    serial_port = open(device, flags);
     
     if(serial_port<0) 
     {
         LOGERR("cannot access %s\n",device);
         return 0;
     }
+    
+#ifdef __APPLE__
+    flags = fcntl(serial_port, F_GETFL, 0);
+    fcntl(serial_port, F_SETFL, flags & (~O_NONBLOCK));
+#endif
 
     serialport_set_dtr(0);
 

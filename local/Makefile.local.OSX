@@ -2,4 +2,4 @@ TARGET		= esptool
 
 INSTALLDIR_BIN	= /usr/local/bin
 TARGET_FLAGS	= 
-TARGET_CFLAGS	=
+TARGET_CFLAGS   = -mmacosx-version-min=10.7
