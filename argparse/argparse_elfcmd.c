@@ -22,6 +22,8 @@
  ***
  **/
 
+#include "argparse_elfcmd.h"
+#include "esptool_elf.h"
 #include "esptool_elf_object.h"
 
 int argparse_elfcmd(int num_args, char **arg_ptr)

@@ -26,7 +26,7 @@
 #include <stdarg.h>
 #include "infohelper.h"
 
-static char infolevel = 1;
+static char infolevel = 2;
 
 void infohelper_set_infolevel(char lvl)
 {

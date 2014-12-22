@@ -21,12 +21,49 @@
  ***    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  ***
  **/
-
+ 
 #include <stdio.h>
-
+#include <stdint.h>
 #include "infohelper.h"
+#include "esptool_elf.h"
 #include "esptool_elf_object.h"
 #include "esptool_binimage.h"
+
+static int argparse_binimagecmd_add_segment(const char *sname, uint32_t padsize)
+{
+    uint32_t snum;
+    uint32_t addr;
+    uint32_t size;
+    uint32_t pad;
+    
+    snum = get_elf_secnum_by_name(sname);
+    addr = get_elf_section_addr(snum);
+    size = get_elf_section_size(snum);
+    if(snum)
+    {
+        print_elf_section_info(snum);
+        pad = get_elf_section_size(snum);
+        padsize--;
+        
+        while(pad & padsize)
+        {
+            pad++;
+        }
+        
+        if(pad > size)
+        {
+            binimage_add_segment(get_elf_section_addr(snum), pad, get_elf_section_bindata(snum, pad));
+            LOGINFO("added section %s at 0x%08X size 0x%08X with padding 0x%08X", get_elf_section_name(snum), addr, size, pad-size);
+        }
+        else
+        {
+            binimage_add_segment(get_elf_section_addr(snum), size, get_elf_section_bindata(snum, size));
+            LOGINFO("added section %s at 0x%08X size 0x%08X", get_elf_section_name(snum), addr, size);
+        }
+    }
+    
+    return snum;
+}
 
 int argparse_binimagecmd(int num_args, char **arg_ptr)
 {
@@ -55,7 +92,7 @@ int argparse_binimagecmd(int num_args, char **arg_ptr)
                 {
                     return 0;
                 }
-                if(binimagecmd_add_named_elfsegment(arg_ptr[0], 4))
+                if(argparse_binimagecmd_add_segment(arg_ptr[0], 4))
                 {
                     return 2;
                 }

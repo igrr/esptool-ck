@@ -31,6 +31,7 @@
 
 // main parser state machine, returns the number of arguments used by
 // the called sub-parser
+#include "argparse.h"
 
 int parse_arg(int num_args, char **arg_ptr)
 {

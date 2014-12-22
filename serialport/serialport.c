@@ -118,7 +118,7 @@ void serialport_set_timeout(unsigned int timeout)
     }
 }
 
-int serialport_open(char *device, unsigned int baudrate)
+int serialport_open(const char *device, unsigned int baudrate)
 {
     LOGINFO("opening port %s at %d", device, baudrate);
     int flags = O_RDWR | O_NOCTTY;

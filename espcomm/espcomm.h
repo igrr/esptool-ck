@@ -25,10 +25,6 @@
 #ifndef ESPCOMM_H
 #define ESPCOMM_H
 
-#include <inttypes.h>
-
-#define NUM_CMDS 11
-
 enum
 {
     CMD0                        = 0x00,
@@ -37,18 +33,13 @@ enum
     FLASH_DOWNLOAD_DATA         = 0x03,
     FLASH_DOWNLOAD_DONE         = 0x04,
     RAM_DOWNLOAD_BEGIN          = 0x05,
-    RAM_DOWNLOAD_DONE           = 0x06,
+    RAM_DOWNLOAD_END            = 0x06,
     RAM_DOWNLOAD_DATA           = 0x07,
     SYNC_FRAME                  = 0x08,
     WRITE_REGISTER              = 0x09,
     READ_REGISTER               = 0x0A
 };
 
-typedef struct
-{
-    uint32_t    cmd_response;
-    uint16_t    payload_response;
-} command_response;
 
 typedef struct
 {
@@ -61,24 +52,20 @@ typedef struct
         uint32_t    response;
     };
     
-    union
-    {
-        unsigned char *data;
-        uint16_t *uint16_data;
-    };
+    unsigned char *data;
     
 } bootloader_packet;
 
 #define BLOCKSIZE_FLASH         0x0400
 #define BLOCKSIZE_RAM           0x1800
 
+int espcomm_set_port(char *port);
+int espcomm_set_baudrate(const char *baudrate);
+int espcomm_set_address(const char *address);
+
 int espcomm_open(void);
 void espcomm_close(void);
 
 int espcomm_upload_file(char *name);
-
-int espcomm_set_port(char *port);
-int espcomm_set_baudrate(const char *baudrate);
-int espcomm_set_address(const char *address);
 
 #endif

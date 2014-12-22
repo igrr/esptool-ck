@@ -30,12 +30,14 @@
 #include "infohelper.h"
 #include "argparse.h"
 #include "espcomm.h"
+#include "elf/esptool_elf.h"
+#include "elf/esptool_elf_object.h"
+#include "binimage/esptool_binimage.h"
 
 int main(int argc, char **argv)
 {
     int num_args;
     int num_args_parsed;
-    int cur_arg;
     char **arg_ptr;
     
     num_args = argc-1;

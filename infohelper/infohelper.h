@@ -25,40 +25,14 @@
 #ifndef INFOHELPER_H
 #define INFOHELPER_H
 
-/*
-** some defines needed to make an overloaded printf() suitable for
-** info messages with selectable verbosity.
-*/
-
-//
-//#define printf_4        printf_3
-//#define printf_5        printf_3
-//#define printf_6        printf_3
-//#define printf_7        printf_3
-//#define printf_8        printf_3
-//#define printf_9        printf_3
-//#define printf_10       printf_3
-//
-//#define COUNT_PARMS2(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _, ...) _
-//#define COUNT_PARMS(...)\
-//        COUNT_PARMS2(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
-//
-//#define CAT(A, B) CAT2(A, B)
-//#define CAT2(A, B) A ## B
-//
-//#define iprintf(...)\
-//        CAT(printf_, COUNT_PARMS(__VA_ARGS__))(__VA_ARGS__)
-//
-//int printf_1(int err);
-//int printf_2(int error, char *string);
-//int printf_3(int error, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 
 /*
 ** set verbositiy level
 ** 0 = only error messages
-** 1 = minimal messages
-** 2 = lot's of messages
-** 3 = a few more
+** 1 = warnings
+** 2 = information messages (default)
+** 3 = debugging info
+** 4 = extra debugging info
 */
 void infohelper_set_infolevel(char lvl);
 

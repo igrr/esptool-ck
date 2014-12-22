@@ -28,8 +28,6 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-#include "esptool_elf.h"
-
 /*
 ** structs used to hold a local ELF cache object of the informations
 ** retrieved from the firmware ELF file
@@ -40,7 +38,7 @@
 ** what is found in the ELF file
 */
 typedef struct {
-    char                *name;
+    const char         *name;
     Elf32_Word          offset;
     Elf32_Addr          address;
     Elf32_Word          size;
@@ -63,7 +61,7 @@ typedef struct {
 ** creates a local ELF cache object
 ** filename: the name of the ELF file on disk
 */
-int create_elf_object(char *filename);
+int create_elf_object(const char *filename);
 
 /*
 ** cleanup and release allocated memory for the ELF cahce object
@@ -91,7 +89,7 @@ int get_elf_num_sections(void);
 ** retrieve the index position of a section, searched for by the sections name
 ** secname: the neame of the section to look up
 */
-int get_elf_secnum_by_name(char *secname);
+int get_elf_secnum_by_name(const char *secname);
 
 /*
 ** retrieve the binary data of a section
@@ -106,7 +104,7 @@ unsigned char* get_elf_section_bindata(Elf32_Half secnum, uint32_t pad_to);
 ** secname: the name of the section to read and write out
 ** fname: the name of the file to write to
 */
-int save_elf_section_bindata(char *secname, char *fname);
+int save_elf_section_bindata(const char *secname, const char *fname);
 
 /*
 ** retrieve the size of the binary data for a section
@@ -130,6 +128,6 @@ Elf32_Word get_elf_entry(void);
 ** secnum: index position of the section
 ** returns a pointer to a string representing the name
 */
-char* get_elf_section_name(Elf32_Half secnum);
+const char* get_elf_section_name(Elf32_Half secnum);
 
 #endif

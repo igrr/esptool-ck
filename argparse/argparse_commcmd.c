@@ -22,6 +22,13 @@
  ***
  **/
 
+#include <stdio.h>
+#include <stdint.h>
+#include <stddef.h>
+#include "infohelper.h"
+#include "esptool_elf.h"
+#include "esptool_elf_object.h"
+#include "esptool_binimage.h"
 #include "espcomm.h"
 
 int argparse_commcmd(int num_args, char **arg_ptr)

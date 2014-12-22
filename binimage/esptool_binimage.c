@@ -27,93 +27,53 @@
 #include <string.h>
 
 #include "infohelper.h"
-#include "esptool_elf_object.h"
 #include "esptool_binimage.h"
 
 static bin_image b_image;
 
-static int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
+int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
 {
-
-    if(data)
+    if(!data)
     {
-        if(b_image.segments == 0)
+        LOGERR("no data for binimage segment #%i", b_image.num_segments);
+        return 0;
+    }
+    
+    if(b_image.segments == 0)
+    {
+        b_image.segments = malloc(size);
+        if(b_image.segments == NULL)
         {
-            b_image.segments = malloc(size);
-            if(b_image.segments == NULL)
-            {
-                info_printf(-1, "can't allocate 0x%08X bytes for binimage segment #%i\r\n", b_image.segments[b_image.num_segments].size,
-                                                                                        b_image.num_segments);
-                return 0;
-            }
-            
+            LOGERR("can't allocate 0x%08X bytes for binimage segment #%i",
+                      b_image.segments[b_image.num_segments].size, b_image.num_segments);
+            return 0;
         }
-        else
-        {
-            b_image.segments = realloc(b_image.segments, (b_image.num_segments+1)*sizeof(binary_segment));
-            if(b_image.segments == NULL)
-            {
-                info_printf(-1, "can't allocate 0x%08X more bytes for binimage segment #%i\r\n", b_image.segments[b_image.num_segments].size,
-                                                                                             b_image.num_segments);
-                return 0;
-            }
-        }
-
-        b_image.segments[b_image.num_segments].address = address;
-        b_image.segments[b_image.num_segments].size = size;
-        b_image.segments[b_image.num_segments].data = data;
-
-        info_printf(2, "added segment #%i to binimage for address 0x%08X with size 0x%08X\r\n", b_image.num_segments, 
-                                                                                            b_image.segments[b_image.num_segments].address,
-                                                                                            b_image.segments[b_image.num_segments].size);
-        
-        b_image.num_segments++;
-        return 1;
     }
     else
     {
-        info_printf(-1, "no data for binimage segment #%i\r\n", b_image.num_segments);
-        return 0;
-    }
-}
-
-int binimagecmd_add_named_elfsegment(char *sname, uint32_t padsize)
-{
-    uint32_t snum;
-    uint32_t addr;
-    uint32_t size;
-    uint32_t pad;
-    
-    snum = get_elf_secnum_by_name(sname);
-    addr = get_elf_section_addr(snum);
-    size = get_elf_section_size(snum);
-    if(snum)
-    {
-        print_elf_section_info(snum);
-        pad = get_elf_section_size(snum);
-        padsize--;
-        
-        while(pad & padsize)
+        b_image.segments = realloc(b_image.segments, (b_image.num_segments+1)*sizeof(binary_segment));
+        if(b_image.segments == NULL)
         {
-            pad++;
-        }
-        
-        if(pad > size)
-        {
-            binimage_add_segment(get_elf_section_addr(snum), pad, get_elf_section_bindata(snum, pad));
-            info_printf(2, "added section %s at 0x%08X size 0x%08X with padding 0x%08X\r\n", get_elf_section_name(snum), addr, size, pad-size);
-        }
-        else
-        {
-            binimage_add_segment(get_elf_section_addr(snum), size, get_elf_section_bindata(snum, size));
-            info_printf(2, "added section %s at 0x%08X size 0x%08X\r\n", get_elf_section_name(snum), addr, size);
+            LOGERR("can't allocate 0x%08X more bytes for binimage segment #%i",
+                      b_image.segments[b_image.num_segments].size, b_image.num_segments);
+            return 0;
         }
     }
+
+    b_image.segments[b_image.num_segments].address = address;
+    b_image.segments[b_image.num_segments].size = size;
+    b_image.segments[b_image.num_segments].data = data;
+
+    LOGINFO("added segment #%i to binimage for address 0x%08X with size 0x%08X",
+            b_image.num_segments,
+            b_image.segments[b_image.num_segments].address,
+            b_image.segments[b_image.num_segments].size);
     
-    return snum;
+    b_image.num_segments++;
+    return 1;
 }
 
-int binimage_prepare(char *fname, uint32_t entry)
+int binimage_prepare(const char *fname, uint32_t entry)
 {
     if(b_image.image_file)
     {

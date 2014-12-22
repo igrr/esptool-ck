@@ -26,11 +26,11 @@
 #ifndef SERIALPORT_H
 #define SERIALPORT_H
 
-int serialport_open(char *dev, unsigned int baudrate);
+int serialport_open(const char *dev, unsigned int baudrate);
 int serialport_close(void);
-void serialport_set_timeout(unsigned int timeout);
 void serialport_set_dtr(unsigned char val);
 void serialport_set_rts(unsigned char val);
+void serialport_set_timeout(unsigned int timeout);
 
 void serialport_drain(void);
 void serialport_flush(void);

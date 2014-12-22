@@ -22,7 +22,8 @@
  ***
  **/
 
-#include <inttypes.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -36,34 +37,17 @@ bootloader_packet send_packet;
 bootloader_packet receive_packet;
 
 
-#ifdef LINUX
-static char default_port[] = { "/dev/ttyUSB0\0" };
+static const char *espcomm_port =
+#if defined(LINUX)
+"/dev/ttyUSB0";
+#elif defined(WINDOWS)
+"/dev/ttyS0";
 #else
-#ifdef WINDOWS
-static char default_port[] = { "/dev/ttyS0\0" };
-#else
-#undef TOOLPORT
-#endif
+"";
 #endif
 
-static char *espcomm_port = default_port;
 static unsigned int espcomm_baudrate = 115200;
 static uint32_t espcomm_address = 0x00000;
-
-const command_response responses[NUM_CMDS] =
-{
-    { 0x20120707, 0x0000 },
-    { 0x20120707, 0x0000 },
-    { 0x20120707, 0x0000 },
-    { 0x20120707, 0x0000 },
-    { 0x20120707, 0x0601 },
-    { 0x20120707, 0x0000 },
-    { 0x20120707, 0x0000 },
-    { 0x20120707, 0x0000 },
-    { 0x20120707, 0x0000 },
-    { 0x20120707, 0x0000 },
-    { 0x20120707, 0x0000 }
-};
 
 static unsigned char sync_frame[36] = { 0x07, 0x07, 0x12, 0x20,
                                0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 
@@ -76,25 +60,18 @@ static uint32_t flash_packet[BLOCKSIZE_FLASH+32];
 
 static void espcomm_enter_boot(void)
 {
-    // reset device into bootloader mode
-    serialport_set_rts(0);
     serialport_set_dtr(0);
-    
     usleep(10);
-    
     serialport_set_dtr(1);
-    
-    usleep(10);
 }
 
 static void espcomm_reset_to_exec(void)
 {
-    // reset device into normal mode
-    serialport_set_rts(1);
-    serialport_set_dtr(0);
-    usleep(10);
-    serialport_set_dtr(1);
-    usleep(10);
+//    serialport_set_dtr(0);
+//    usleep(10);
+//    serialport_set_dtr(1);
+//    usleep(100);
+//    serialport_set_dtr(0);
 }
 
 uint32_t espcomm_calc_checksum(unsigned char *data, uint16_t data_size)
@@ -127,7 +104,7 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
 
     LOGDEBUG("espcomm_cmd: sending command header");
     
-    serialport_send_slip((unsigned char*)&send_packet, 8);
+    serialport_send_slip((unsigned char*) &send_packet, 8);
     
     if(data_size)
     {
@@ -145,7 +122,7 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
     
     if(serialport_receive_C0())
     {
-        if(serialport_receive_slip((unsigned char*)&receive_packet, 8))
+        if(serialport_receive_slip((unsigned char*) &receive_packet, 8))
         {
             if(receive_packet.size)
             {
@@ -224,7 +201,7 @@ static int espcomm_sync(void)
             
             serialport_flush();
             
-            if(espcomm_send_command(SYNC_FRAME, (unsigned char*) &sync_frame, 36))
+            if(espcomm_send_command(SYNC_FRAME, (unsigned char*) &sync_frame, 36) == 0x20120707)
             {
                 serialport_flush();
                 return 1;
@@ -276,7 +253,6 @@ int espcomm_upload_file(char *name)
     FILE *f;
     struct stat st;
     uint32_t fsize;
-    uint32_t ftotal;
     uint32_t fdone;
     
     uint32_t cnt;
@@ -300,7 +276,6 @@ int espcomm_upload_file(char *name)
 
             if(f)
             {
-                ftotal = fsize;
                 fdone = 0;
 
                 LOGINFO("uploading %i bytes from %s to flash at 0x%08X", fsize, name, espcomm_address);

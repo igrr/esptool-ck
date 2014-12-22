@@ -21,11 +21,10 @@
  ***    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  ***
  **/
-
 #include <stdlib.h>
 #include <string.h>
-
 #include "infohelper.h"
+#include "esptool_elf.h"
 #include "esptool_elf_object.h"
 #include "esptool_elf_enums.h"
 
@@ -271,8 +270,7 @@ unsigned char* get_elf_section_bindata(Elf32_Half secnum, uint32_t pad_to)
     return 0;
 }
 
-
-int save_elf_section_bindata( char *secname, char *fname )
+int save_elf_section_bindata( const char *secname, const char *fname )
 {
     FILE *f;
     unsigned char *binblob;
@@ -326,7 +324,7 @@ Elf32_Word get_elf_section_addr(Elf32_Half secnum)
     return 0;
 }
 
-char* get_elf_section_name(Elf32_Half secnum)
+const char* get_elf_section_name(Elf32_Half secnum)
 {
     if(secnum && secnum < e_object.header.e_shnum)
     {
@@ -340,7 +338,7 @@ Elf32_Word get_elf_entry(void)
     return e_object.header.e_entry;
 }
 
-int create_elf_object(char *filename)
+int create_elf_object(const char *filename)
 {
     if(e_object.e_file)
     {
