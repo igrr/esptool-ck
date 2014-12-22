@@ -194,10 +194,44 @@ int serialport_open(const char *device, unsigned int baudrate)
 static unsigned char subst_C0[2] = { 0xDB, 0xDC };
 static unsigned char subst_DB[2] = { 0xDB, 0xDD };
 
+#define STATIC_SLIP_BUF_SIZE 4096
+int serialport_send_slip_static(unsigned char *data, unsigned int size)
+{
+    unsigned char buf[STATIC_SLIP_BUF_SIZE];
+    unsigned out_pos = 0;
+    for (int i = 0; i < size; ++i)
+    {
+        unsigned char cur = data[i];
+        if (cur == 0xC0)
+        {
+            buf[out_pos++] = subst_C0[0];
+            buf[out_pos++] = subst_C0[1];
+        }
+        else if (cur == 0xDB)
+        {
+            buf[out_pos++] = subst_DB[0];
+            buf[out_pos++] = subst_DB[1];
+        }
+        else
+            buf[out_pos++] = cur;
+    }
+    
+    if(write(serial_port, buf, out_pos) != out_pos)
+    {
+        LOGERR("failed sending %d bytes", out_pos);
+        return 0;
+    }
+    tcdrain(serial_port);
+    return size;
+}
+
 int serialport_send_slip(unsigned char *data, unsigned int size)
 {
     unsigned int sent;
     unsigned char cur_byte;
+    
+    if (size < STATIC_SLIP_BUF_SIZE / 2)
+        return serialport_send_slip_static(data, size);
     
     sent = 0;
     
