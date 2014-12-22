@@ -1,8 +1,8 @@
 /**********************************************************************************
  **********************************************************************************
  ***
- ***    argparse_elfcmd.c
- ***    - parsing of ELF file related commands
+ ***    argparse_commcmd.c
+ ***    - parsing of comms related commands (flash upload, etc)
  ***
  ***    Copyright (C) 2014 Christian Klippel <ck@atelier-klippel.de>
  ***
@@ -22,51 +22,63 @@
  ***
  **/
 
-#include "esptool_elf_object.h"
+#include "espcomm.h"
 
-int argparse_elfcmd(int num_args, char **arg_ptr)
+int argparse_commcmd(int num_args, char **arg_ptr)
 {
     char *cur_cmd;
     
-    if(arg_ptr[0][1] == 'e' && num_args--)
+    if(arg_ptr[0][1] == 'c' && num_args--)
     {
         cur_cmd = &arg_ptr[0][2];
         arg_ptr++;
-        
+
         switch(*cur_cmd++)
         {
-            // open ELF file
-            case 'o':
+            case 'p':
                 if(num_args < 1)
                 {
                     return 0;
                 }
-                else if(create_elf_object(arg_ptr[0]))
+                if(espcomm_set_port(arg_ptr[0]))
                 {
                     return 2;
                 }
                 break;
                 
-            // command to save a section from the ELF to a new file
-            case 's':
-                if(num_args < 2)
+            case 'b':
+                if(num_args < 1)
                 {
                     return 0;
                 }
-                else if(save_elf_section_bindata(arg_ptr[0], arg_ptr[1]))
+                if(espcomm_set_baudrate(arg_ptr[0]))
                 {
-                    return 3;
+                    return 2;
                 }
                 break;
 
-            // close ELF file
-            case 'c':
-                if(close_elf_object())
+            case 'a':
+                if(num_args < 1)
                 {
-                    return 1;
+                    return 0;
+                }
+                if(espcomm_set_address(arg_ptr[0]))
+                {
+                    return 2;
                 }
                 break;
                 
+            case 'f':
+                if(num_args < 1)
+                {
+                    return 0;
+                }
+                if(espcomm_upload_file(arg_ptr[0]))
+                {
+                    return 2;
+                }
+                break;
+
             default:
                 return 0;
                 break;

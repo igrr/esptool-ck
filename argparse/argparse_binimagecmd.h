@@ -1,8 +1,8 @@
 /**********************************************************************************
  **********************************************************************************
  ***
- ***    argparese.h
- ***    - header file for argparse.c
+ ***    argparse_binimagecmd.h
+ ***    - include file for the flash image commands argument parser
  ***
  ***    Copyright (C) 2014 Christian Klippel <ck@atelier-klippel.de>
  ***
@@ -22,9 +22,9 @@
  ***
  **/
 
-#ifndef ARGPARSE_H
-#define ARGPARSE_H
+#ifndef ARGPARSE_BINIMAGECMD_H
+#define ARGPARSE_BINIMAGECMD_H
 
-int parse_arg(int num_args, char **arg_ptr);
+int argparse_binimagecmd(int num_args, char **arg_ptr);
 
 #endif

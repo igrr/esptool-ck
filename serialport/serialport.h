@@ -1,8 +1,8 @@
 /**********************************************************************************
  **********************************************************************************
  ***
- ***    argparese.h
- ***    - header file for argparse.c
+ ***    serialport.h
+ ***    - include file for serialport.c
  ***
  ***    Copyright (C) 2014 Christian Klippel <ck@atelier-klippel.de>
  ***
@@ -22,9 +22,22 @@
  ***
  **/
 
-#ifndef ARGPARSE_H
-#define ARGPARSE_H
 
-int parse_arg(int num_args, char **arg_ptr);
+#ifndef SERIALPORT_H
+#define SERIALPORT_H
+
+int serialport_open(char *dev, unsigned int baudrate);
+int serialport_close(void);
+void serialport_set_timeout(unsigned int timeout);
+void serialport_set_dtr(unsigned char val);
+void serialport_set_rts(unsigned char val);
+
+void serialport_drain(void);
+void serialport_flush(void);
+
+int serialport_send_slip(unsigned char *data, unsigned int size);
+int serialport_receive_slip(unsigned char *data, unsigned int size);
+int serialport_send_C0(void);
+int serialport_receive_C0(void);
 
 #endif

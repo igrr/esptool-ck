@@ -1,4 +1,4 @@
-TARGET_ARCH	= LINUX 
+TARGET_ARCH	= LINUX
 CFLAGS		= -Os
 SDK_LIBDIR	=
 SDK_LIBS	=
@@ -7,7 +7,7 @@ SDK_INCLUDES	=
 CC		:= gcc
 LD		:= gcc
 
-MODULES		:= infohelper elf binimage argparse
+MODULES		:= infohelper elf binimage argparse serialport espcomm
 
 
 -include local/Makefile.local.$(TARGET_ARCH)
@@ -22,7 +22,7 @@ vpath %.c $(SRC_DIR)
 
 define make-goal
 $1/%.o: %.c
-	$(CC) $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) -D$(TARGET_ARCH) -c $$< -o $$@
+	$(CC) $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) -D$(TARGET_ARCH) -Wall -c $$< -o $$@
 endef
 
 .PHONY: all checkdirs clean

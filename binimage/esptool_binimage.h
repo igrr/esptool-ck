@@ -68,7 +68,7 @@ typedef struct {
 ** entry: the code entry point address
 ** returns 1 on success, 0 on failure
 */
-int binimage_prepare(unsigned char *fname, uint32_t entry);
+int binimage_prepare(char *fname, uint32_t entry);
 
 /*
 ** specify a new code entry address
@@ -84,12 +84,10 @@ int binimage_write_close(uint32_t padsize);
 
 
 /*
-** add a new segment to the firmware image
-** address: specifies the load address of the given segment
-** size: specifies the size of the binary data segment in bytes
-** data: a pointer to an array of bytes containing the binary segment data
-** returns 1 on success, 0 on failure
+** add a new segment by name from the ELF file to the firmware image
+** sname: name of the segment in the ELF file
+** padsize: padding bytes applied to the segment in the firmware image
 */
-int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data);
+int binimagecmd_add_named_elfsegment(char *sname, uint32_t padsize);
 
 #endif

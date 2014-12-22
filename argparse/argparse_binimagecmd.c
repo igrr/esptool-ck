@@ -1,8 +1,8 @@
 /**********************************************************************************
  **********************************************************************************
  ***
- ***    argparse_elfcmd.c
- ***    - parsing of ELF file related commands
+ ***    argparse_binimagecmd.c
+ ***    - parsing of command related to binary flash image functions
  ***
  ***    Copyright (C) 2014 Christian Klippel <ck@atelier-klippel.de>
  ***
@@ -22,46 +22,47 @@
  ***
  **/
 
-#include "esptool_elf_object.h"
+#include <stdio.h>
 
-int argparse_elfcmd(int num_args, char **arg_ptr)
+#include "infohelper.h"
+#include "esptool_elf_object.h"
+#include "esptool_binimage.h"
+
+int argparse_binimagecmd(int num_args, char **arg_ptr)
 {
     char *cur_cmd;
     
-    if(arg_ptr[0][1] == 'e' && num_args--)
+    if(arg_ptr[0][1] == 'b' && num_args--)
     {
         cur_cmd = &arg_ptr[0][2];
         arg_ptr++;
-        
+
         switch(*cur_cmd++)
         {
-            // open ELF file
             case 'o':
                 if(num_args < 1)
                 {
                     return 0;
                 }
-                else if(create_elf_object(arg_ptr[0]))
+                if(binimage_prepare(arg_ptr[0], get_elf_entry()))
                 {
                     return 2;
                 }
                 break;
                 
-            // command to save a section from the ELF to a new file
             case 's':
-                if(num_args < 2)
+                if(num_args < 1)
                 {
                     return 0;
                 }
-                else if(save_elf_section_bindata(arg_ptr[0], arg_ptr[1]))
+                if(binimagecmd_add_named_elfsegment(arg_ptr[0], 4))
                 {
-                    return 3;
+                    return 2;
                 }
                 break;
 
-            // close ELF file
             case 'c':
-                if(close_elf_object())
+                if(binimage_write_close(16))
                 {
                     return 1;
                 }

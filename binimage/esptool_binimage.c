@@ -27,11 +27,12 @@
 #include <string.h>
 
 #include "infohelper.h"
+#include "esptool_elf_object.h"
 #include "esptool_binimage.h"
 
 static bin_image b_image;
 
-int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
+static int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
 {
 
     if(data)
@@ -41,7 +42,7 @@ int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
             b_image.segments = malloc(size);
             if(b_image.segments == NULL)
             {
-                iprintf(-1, "can't allocate 0x%08X bytes for binimage segment #%i\r\n", b_image.segments[b_image.num_segments].size,
+                info_printf(-1, "can't allocate 0x%08X bytes for binimage segment #%i\r\n", b_image.segments[b_image.num_segments].size,
                                                                                         b_image.num_segments);
                 return 0;
             }
@@ -52,7 +53,7 @@ int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
             b_image.segments = realloc(b_image.segments, (b_image.num_segments+1)*sizeof(binary_segment));
             if(b_image.segments == NULL)
             {
-                iprintf(-1, "can't allocate 0x%08X more bytes for binimage segment #%i\r\n", b_image.segments[b_image.num_segments].size,
+                info_printf(-1, "can't allocate 0x%08X more bytes for binimage segment #%i\r\n", b_image.segments[b_image.num_segments].size,
                                                                                              b_image.num_segments);
                 return 0;
             }
@@ -62,7 +63,7 @@ int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
         b_image.segments[b_image.num_segments].size = size;
         b_image.segments[b_image.num_segments].data = data;
 
-        iprintf(0, "added segment #%i to binimage for address 0x%08X with size 0x%08X\r\n", b_image.num_segments, 
+        info_printf(2, "added segment #%i to binimage for address 0x%08X with size 0x%08X\r\n", b_image.num_segments, 
                                                                                             b_image.segments[b_image.num_segments].address,
                                                                                             b_image.segments[b_image.num_segments].size);
         
@@ -71,12 +72,48 @@ int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
     }
     else
     {
-        iprintf(0, "no data for binimage segment #%i\r\n", b_image.num_segments);
+        info_printf(-1, "no data for binimage segment #%i\r\n", b_image.num_segments);
         return 0;
     }
 }
 
-int binimage_prepare(unsigned char *fname, uint32_t entry)
+int binimagecmd_add_named_elfsegment(char *sname, uint32_t padsize)
+{
+    uint32_t snum;
+    uint32_t addr;
+    uint32_t size;
+    uint32_t pad;
+    
+    snum = get_elf_secnum_by_name(sname);
+    addr = get_elf_section_addr(snum);
+    size = get_elf_section_size(snum);
+    if(snum)
+    {
+        print_elf_section_info(snum);
+        pad = get_elf_section_size(snum);
+        padsize--;
+        
+        while(pad & padsize)
+        {
+            pad++;
+        }
+        
+        if(pad > size)
+        {
+            binimage_add_segment(get_elf_section_addr(snum), pad, get_elf_section_bindata(snum, pad));
+            info_printf(2, "added section %s at 0x%08X size 0x%08X with padding 0x%08X\r\n", get_elf_section_name(snum), addr, size, pad-size);
+        }
+        else
+        {
+            binimage_add_segment(get_elf_section_addr(snum), size, get_elf_section_bindata(snum, size));
+            info_printf(2, "added section %s at 0x%08X size 0x%08X\r\n", get_elf_section_name(snum), addr, size);
+        }
+    }
+    
+    return snum;
+}
+
+int binimage_prepare(char *fname, uint32_t entry)
 {
     if(b_image.image_file)
     {
@@ -95,7 +132,7 @@ int binimage_prepare(unsigned char *fname, uint32_t entry)
         b_image.image_file = fopen( fname, "wb");
         if(b_image.image_file == NULL)
         {
-            iprintf(-1, "cant open binimage file \"%s\" for writing, aborting\r\n", fname);
+            info_printf(-1, "cant open binimage file \"%s\" for writing, aborting\r\n", fname);
             return 0;
         }
     }
@@ -106,7 +143,7 @@ int binimage_prepare(unsigned char *fname, uint32_t entry)
     
     b_image.segments = 0;
     
-    iprintf(0, "created structure for binimage \"%s\" with entry address 0x%08X\r\n", fname, b_image.entry);
+    info_printf(2, "created structure for binimage \"%s\" with entry address 0x%08X\r\n", fname, b_image.entry);
     
     return 1;
 }
@@ -114,7 +151,7 @@ int binimage_prepare(unsigned char *fname, uint32_t entry)
 void bimage_set_entry(uint32_t entry)
 {
     b_image.entry = entry;
-    iprintf(1, "set bimage entry to 0x%08X\r\n", b_image.entry);
+    info_printf(2, "set bimage entry to 0x%08X\r\n", b_image.entry);
 }
 
 int binimage_write_close(uint32_t padsize)
@@ -131,8 +168,8 @@ int binimage_write_close(uint32_t padsize)
     
     if(fwrite((unsigned char*)&b_image, 1, 8, b_image.image_file) != 8)
     {
-        iprintf(-1, "cant write main header to binimage file, aborting\r\n");
-        close(b_image.image_file);
+        info_printf(-1, "cant write main header to binimage file, aborting\r\n");
+        fclose(b_image.image_file);
         b_image.image_file = 0;
         return 0;
     }
@@ -143,8 +180,8 @@ int binimage_write_close(uint32_t padsize)
     {
         if(fwrite((unsigned char*)&b_image.segments[cnt], 1, 8, b_image.image_file) != 8)
         {
-            iprintf(-1, "cant write header for segment  #%i to binimage file, aborting\r\n", cnt);
-            close(b_image.image_file);
+            info_printf(-1, "cant write header for segment  #%i to binimage file, aborting\r\n", cnt);
+            fclose(b_image.image_file);
             b_image.image_file = 0;
             return 0;
         }
@@ -153,10 +190,10 @@ int binimage_write_close(uint32_t padsize)
         
         if(fwrite(b_image.segments[cnt].data, 1, b_image.segments[cnt].size, b_image.image_file) != b_image.segments[cnt].size)
         {
-            iprintf(-1, "cant write data block for segment  #%i to binimage file, aborting\r\n", cnt);
-            close(b_image.image_file);
+            info_printf(-1, "cant write data block for segment  #%i to binimage file, aborting\r\n", cnt);
+            fclose(b_image.image_file);
             b_image.image_file = 0;
-            return;
+            return 0;
         }
         
         total_size += b_image.segments[cnt].size;
@@ -172,7 +209,7 @@ int binimage_write_close(uint32_t padsize)
     {
         if(fputc(0x00, b_image.image_file) == EOF)
         {
-            iprintf(-1, "cant write padding byte 0x00 at 0x%08X to binimage file, aborting\r\n", total_size);
+            info_printf(-1, "cant write padding byte 0x00 at 0x%08X to binimage file, aborting\r\n", total_size);
             fclose(b_image.image_file);
             b_image.image_file = 0;
             return 0;
@@ -182,13 +219,13 @@ int binimage_write_close(uint32_t padsize)
     
     if(fputc(chksum, b_image.image_file) == EOF)
     {
-        iprintf(-1, "cant write checksum byte 0x%02X at 0x%08X to binimage file, aborting\r\n", chksum, total_size);
+        info_printf(-1, "cant write checksum byte 0x%02X at 0x%08X to binimage file, aborting\r\n", chksum, total_size);
         fclose(b_image.image_file);
         b_image.image_file = 0;
         return 0;
     }
 
-    iprintf(0, "saved binimage file, total size is %i bytes, checksum byte is 0x%02X\r\n", total_size, chksum);
+    info_printf(2, "saved binimage file, total size is %i bytes, checksum byte is 0x%02X\r\n", total_size, chksum);
     
     fclose(b_image.image_file);
     b_image.image_file = 0;
@@ -199,13 +236,13 @@ int binimage_write_close(uint32_t padsize)
         {
             if(b_image.segments[cnt].data)
             {
-                iprintf(2, "releasing memory used for segment %i in binimage\r\n", cnt);
+                info_printf(2, "releasing memory used for segment %i in binimage\r\n", cnt);
                 free(b_image.segments[cnt].data);
             }
         }
         if(b_image.segments)
         {
-            iprintf(2, "releasing memory used for binimage segment pointers\r\n");
+            info_printf(2, "releasing memory used for binimage segment pointers\r\n");
             free(b_image.segments);
         }
     }

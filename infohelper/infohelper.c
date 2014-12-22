@@ -24,64 +24,59 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include "infohelper.h"
 
+const char heartbeat[] = { "-\\|/-\\|/" };
+static unsigned int beat = 0;
 static char infolevel  = 1;
 
-int printf_1(int err)
-{
-    printf("**ERROR: %d\r\n", err);
-    return 0;
-}
-
-int printf_2(int error, char *string)
-{
-    if(error < -1)
-    {
-        printf("**WARNING: %s", string);
-    }
-    else if(error < 0)
-    {
-        printf("**ERROR: %s", string);
-    }
-    else if(error < infolevel)
-    {
-        printf("Info: %s", string);
-    }
-    
-    return 0;
-}
-
-int printf_3(int error, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
-
-int printf_3(int error, char *fmt, ...)
+int info_printf(int error, const char *format, ...) 
 {
     va_list v;
-    
+    int done = 0;
 
-    if(error < -1)
+    va_start(v, format);
+
+    if(error < 0)
     {
-        printf("**WARNING: ");
-        va_start(v, fmt);
-        vprintf(fmt, v);
-        va_end(v);
+        if(error > -100)
+        {
+            printf("** ERROR: ");
+            done = vprintf(format, v);
+        }
+#ifdef DEBUG
+        else if(error == -100)
+        {
+            printf(">> DEBUG: ");
+            done = vprintf(format, v);
+        }
+#endif
     }
-    else if(error < 0)
+    else if(error == 0)
     {
-        printf("**ERROR: ");
-        va_start(v, fmt);
-        vprintf(fmt, v);
-        va_end(v);
+        printf("** Warning: ");
+        done = vprintf(format, v);
     }
-    else if(error < infolevel)
+    else if(infolevel >= error)
     {
         printf("Info: ");
-        va_start(v, fmt);
-        vprintf(fmt, v);
-        va_end(v);
+        done = vprintf(format, v);
     }
-    return 0;
+    else if(error > 100)
+    {
+        error -= 100;
+        if(infolevel >= error)
+        {
+            done = vprintf(format, v);
+        }
+    }
+    
+    va_end(v);
+    fflush(stdout);
+    return done;
 }
+
+
+
 
 void infohelper_set_infolevel(char lvl)
 {
@@ -119,4 +114,59 @@ void infohelper_set_argverbosity(int num_args, char **arg_ptr)
             }
         }
     }
+}
+
+void infohelper_print_progress(char *msg, float cval, float maxval)
+{
+    unsigned int cur, cnt;
+
+    if(cval == 0)
+    {
+        beat = 0;
+    }
+    
+    cur = (35 / maxval) * cval;
+
+    cnt = 35-cur;
+    
+    if(msg)
+    {
+        info_printf(1, "%s: [", msg);
+    }
+    else
+    {
+        info_printf(1, "[");
+    }
+
+    while(cur--)
+    {
+        info_printf(101, "*");
+    }
+
+    if(cnt)
+    {
+        if(cval)
+        {
+            info_printf(101, "%c",heartbeat[beat]);
+        }
+        else
+        {
+            info_printf(101, " ");
+        }
+    }
+    else
+    {
+        info_printf(101, "*");
+    }
+
+    while(cnt--)
+    {
+        info_printf(101, " ");
+    }
+
+    info_printf(101, "\b]\r");
+    fflush(stdout);
+    
+    beat++;
+    beat &= 0x07;
 }

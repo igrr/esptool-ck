@@ -1,6 +1,6 @@
-- clean up the code
+- clean up the code, it's a real mess
 - better documentation
 - rework the info/error message stuff
-- the command parser is extremely ugly, needs heavy rework
-- add functionality to up/download firmware/memory to/from the chip
+- refine functionality to up/download firmware/memory to/from the chip
+  so that it can use the internally generated images if wanted
 - ...

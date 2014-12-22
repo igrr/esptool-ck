@@ -29,6 +29,7 @@
 
 #include "infohelper.h"
 #include "argparse.h"
+#include "espcomm.h"
 
 int main(int argc, char **argv)
 {
@@ -49,9 +50,7 @@ int main(int argc, char **argv)
 
     infohelper_set_argverbosity(num_args, arg_ptr);
     
-    iprintf(0, "esptool v0.0.2 - (c) 2014 Ch. Klippel <ck@atelier-klippel.de>\r\n");
-    iprintf(0, "This program is licensed under the GPL v2\r\n");
-    iprintf(0, "See the file LICENSE for details\r\n\r\n");
+    info_printf(1, "esptool v0.0.3a - (c) 2014 Ch. Klippel <ck@atelier-klippel.de>\r\n");
     
     while(num_args)
     {
@@ -65,7 +64,7 @@ int main(int argc, char **argv)
         arg_ptr += num_args_parsed;
     }
 
-    iprintf(0, "\r\n");
+    printf("\r\n");
     close_elf_object();
     binimage_write_close(16);
     return 0;
@@ -73,5 +72,5 @@ int main(int argc, char **argv)
 EXITERROR:
     close_elf_object();
     binimage_write_close(16);
-    exit -1;
+    return -1;
 }
