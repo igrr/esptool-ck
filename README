@@ -41,11 +41,12 @@ The following commands are currently available:
                         Add more v's to increase it more, e.g.
                         -vv, -vvv, -vvvv, etc.
 
+-q                      Disable most of the output.
+
 -cp <device>            Select the serial port device to use for
                         communicating with the ESP.
-                        On Windows /dev/ttySO = COM1:, /dev/ttyS1 = COM2:, etc.
-                        Default is /dev/ttyUSB0 on Linux and 
-                        /dev/TTYS0 on Windows
+                        Default is /dev/ttyUSB0 on Linux, 
+                        COM1 on Windows, /dev/tty.usbserial on Mac OS X.
 
 -cb <baudrate>          Select the baudrate to use, default is 115200
 
