@@ -49,7 +49,7 @@ int main(int argc, char **argv)
         LOGERR("No arguments given");
         return 0;
     }
-
+	infohelper_set_infolevel(1);
     infohelper_set_argverbosity(num_args, arg_ptr);
     
     LOGINFO("esptool v0.0.3a - (c) 2014 Ch. Klippel <ck@atelier-klippel.de>");

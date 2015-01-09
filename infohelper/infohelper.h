@@ -55,6 +55,6 @@ void infohelper_output_plain(int loglevel, const char* format, ...);
 #define LOGDEBUG(...) infohelper_output(3, __VA_ARGS__)
 #define LOGVERBOSE(...) infohelper_output(4, __VA_ARGS__)
 
-#define INFO(...) infohelper_output_plain(2, __VA_ARGS__)
+#define INFO(...) infohelper_output_plain(0, __VA_ARGS__)
 
 #endif

@@ -26,7 +26,7 @@
 #include <stdarg.h>
 #include "infohelper.h"
 
-static char infolevel = 2;
+static char infolevel = 0;
 
 void infohelper_set_infolevel(char lvl)
 {
@@ -44,8 +44,6 @@ void infohelper_increase_infolevel(void)
 void infohelper_set_argverbosity(int num_args, char **arg_ptr)
 {
     char *cur_arg;
-
-    infolevel = 2;
     
     while(num_args--)
     {
@@ -70,7 +68,7 @@ void infohelper_output(int loglevel, const char* format, ...)
 {
     if (infolevel < loglevel)
         return;
-    const char* log_level_names[] = {"Error: ", "Warning: ", "", "\t", "\t\t"};
+    const char* log_level_names[] = {"error: ", "warning: ", "", "\t", "\t\t"};
     const int log_level_names_count = sizeof(log_level_names) / sizeof(const char*);
     if (loglevel >= log_level_names_count)
         loglevel = log_level_names_count - 1;
