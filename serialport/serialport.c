@@ -90,7 +90,7 @@ void serialport_setbaudrate(unsigned int baudrate)
 	sDCB.fInX			=	FALSE;
 	if (!SetCommState(sPort, &sDCB))
 	{
-		LOGERR("SetCommState call failed");
+		LOGDEBUG("SetCommState call failed");
 	}
 }
 
@@ -102,26 +102,27 @@ int serialport_open(const char *device, unsigned int baudrate)
 
 	if (sPort == INVALID_HANDLE_VALUE) 
 	{
+		LOGERR("Failed to open %s", device);
 		return 0;
 	}
 	
 	SetupComm(sPort, 256, 256);
 	serialport_setbaudrate(baudrate);
-	serialport_set_timeout(1);
+	serialport_set_timeout(2000);
 	return 1;
 }
 
 void serialport_set_timeout(unsigned int timeout)
 {
 	LOGDEBUG("setting serial port timeouts to %d ms", timeout);
-	sTIMEOUTS.ReadIntervalTimeout 			= 10;
-	sTIMEOUTS.ReadTotalTimeoutConstant 		= 1000*timeout;
-	sTIMEOUTS.ReadTotalTimeoutMultiplier 	= 100;
-	sTIMEOUTS.WriteTotalTimeoutConstant 	= 1000*timeout;
-	sTIMEOUTS.WriteTotalTimeoutMultiplier 	= 100;
+	sTIMEOUTS.ReadIntervalTimeout 			= 0;
+	sTIMEOUTS.ReadTotalTimeoutConstant 		= timeout;
+	sTIMEOUTS.ReadTotalTimeoutMultiplier 	= 10;
+	sTIMEOUTS.WriteTotalTimeoutConstant 	= timeout;
+	sTIMEOUTS.WriteTotalTimeoutMultiplier 	= 10;
 	if (!SetCommTimeouts(sPort,&sTIMEOUTS))
 	{
-		LOGERR("SetCommTimeouts call failed");
+		LOGDEBUG("SetCommTimeouts call failed");
 	}
 	SetCommMask(sPort, EV_TXEMPTY);
 }
@@ -132,7 +133,7 @@ unsigned serialport_read(unsigned char* data, unsigned int size)
 	ReadFile(sPort, data, size, &cb, NULL);
 	if (cb != size)
 	{
-		LOGERR("read %d, requested %d", cb, size);
+		LOGDEBUG("read %d, requested %d", cb, size);
 	}
 	return (unsigned) cb;
 }
@@ -143,7 +144,7 @@ unsigned serialport_write(const unsigned char* data, unsigned int size)
 	WriteFile(sPort, data, size, &cb, NULL);
 	if (cb != size)
 	{
-		LOGERR("wrote %d, requested %d", cb, size);
+		LOGDEBUG("wrote %d, requested %d", cb, size);
 	}
 	return (unsigned) cb; 
 }
@@ -160,14 +161,7 @@ void serialport_drain(void)
 {
     if(sPort)
     {
-	//	DWORD event;
-	//	do
-	//	{
-	//		WaitCommEvent(sPort, &event, NULL);
-	//		LOGDEBUG("WaitCommEvent %08x", event);
-	//	}
-	//	while(!(event & EV_TXEMPTY));
-		
+		FlushFileBuffers(sPort);
     }
 }
 
@@ -605,6 +599,7 @@ int serialport_receive_C0(void)
     
     if(b != 0xC0)
     {
+		LOGERR("serialport_receive_C0: something else instead of C0");
         return 0;
     }
     

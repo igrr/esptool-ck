@@ -141,12 +141,12 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
                 
                 if(serialport_receive_slip(receive_packet.data, receive_packet.size) == 0)
                 {
-                    LOGDEBUG("espcomm_cmd: cant receive slip payload data");
+                    LOGWARN("espcomm_cmd: cant receive slip payload data");
                     return 0;
                 }
                 else
                 {
-                    LOGDEBUG("espcomm_cmd: received %x bytes: ", receive_packet.size);
+                    LOGVERBOSE("espcomm_cmd: received %x bytes: ", receive_packet.size);
                     for(cnt = 0; cnt < receive_packet.size; cnt++)
                     {
                         LOGVERBOSE("0x%02X ", receive_packet.data[cnt]);
@@ -163,25 +163,30 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
                 }
                 else
                 {
-                    LOGWARN("espcomm cmd: wrong direction/command: 0x%02X 0x%02X", receive_packet.direction, receive_packet.command);
+                    LOGWARN("espcomm cmd: wrong direction/command: 0x%02X 0x%02X, expected 0x%02X 0x%02X", 
+						receive_packet.direction, receive_packet.command, 1, command);
+					return 0;
                 }
             }
             else
             {
                 LOGWARN("espcomm cmd: no final C0");
+				return 0;
             }
         }
         else
         {
             LOGWARN("espcomm cmd: can't receive command header response");
+			return 0;
         }
     }
     else
     {
-        LOGDEBUG("espcomm cmd: didn't receive C0");
+        LOGWARN("espcomm cmd: didn't receive C0");
+		return 0;
     }
     
-    LOGDEBUG("espcomm cmd: response 0x%08X", result);
+    LOGVERBOSE("espcomm cmd: response 0x%08X", result);
     return result;
 }
 
@@ -190,6 +195,8 @@ static int espcomm_sync(void)
 {
     unsigned char retry, retry2;
     
+	usleep(10000);
+    serialport_flush();
     retry2 = 0;
     
     while(retry2++ < 4)
@@ -207,12 +214,13 @@ static int espcomm_sync(void)
             
             if(espcomm_send_command(SYNC_FRAME, (unsigned char*) &sync_frame, 36) == 0x20120707)
             {
+				usleep(10000);
                 serialport_flush();
                 return 1;
             }
         }
     }
-    
+    LOGWARN("espcomm_sync failed");
     return 0;
 }
 
@@ -281,14 +289,19 @@ int espcomm_upload_file(char *name)
             {
                 fdone = 0;
 
-                LOGINFO("uploading %i bytes from %s to flash at 0x%08X", fsize, name, espcomm_address);
+                INFO("Uploading %i bytes from %s to flash at 0x%08X\n", fsize, name, espcomm_address);
 
-                LOGINFO("erasing flash");
-                serialport_set_timeout(1000);
-                espcomm_start_flash(fsize, espcomm_address);
-                serialport_set_timeout(1);
+                LOGDEBUG("erasing flash");
+                res = espcomm_start_flash(fsize, espcomm_address);
+				if (res == 0)
+				{
+					LOGWARN("espcomm_send_command(FLASH_DOWNLOAD_BEGIN) failed");
+					fclose(f);
+					espcomm_close();
+					return 0;
+				}
                 
-                LOGINFO("writing flash");
+                LOGDEBUG("writing flash");
                 
                 while(fsize)
                 {
@@ -304,6 +317,7 @@ int espcomm_upload_file(char *name)
                     
                     if(res == 0)
                     {
+						LOGWARN("espcomm_send_command(FLASH_DOWNLOAD_DATA) failed");
                         res = espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) &flash_packet, 4);
                         fclose(f);
                         espcomm_close();
@@ -333,7 +347,6 @@ int espcomm_upload_file(char *name)
     {
         LOGERR("stat %s failed", name);
     }
-    
     return 0;
 }
 
@@ -355,12 +368,7 @@ int espcomm_start_app(int reboot)
         flash_packet[0] = 1;
     }
     
-    int res = espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) &flash_packet, 4);
-    if (res == 0)
-    {
-        LOGERR("failed to start app");
-        return 0;
-    }
+    espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) &flash_packet, 4);
     file_uploaded = 0;
 
     espcomm_close();
