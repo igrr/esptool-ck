@@ -32,16 +32,20 @@
 #include "infohelper.h"
 #include "espcomm.h"
 #include "serialport.h"
+#include "espcomm_boards.h"
 
 bootloader_packet send_packet;
 bootloader_packet receive_packet;
 
+static espcomm_board_t* espcomm_board = 0;
 
 static const char *espcomm_port =
 #if defined(LINUX)
 "/dev/ttyUSB0";
 #elif defined(WINDOWS)
-"/dev/ttyS0";
+"COM1";
+#elif defined(OSX)
+"/dev/tty.usbserial";
 #else
 "";
 #endif
@@ -62,20 +66,12 @@ static int file_uploaded = 0;
 
 static void espcomm_enter_boot(void)
 {
-    serialport_set_dtr(1);
-    serialport_set_rts(1);
-    usleep(1000);
-    serialport_set_dtr(0);
+    espcomm_board_reset_into_bootloader(espcomm_board);
 }
 
 static void espcomm_reset_to_exec(void)
 {
-    serialport_set_rts(0);
-//    serialport_set_dtr(0);
-//    usleep(10);
-//    serialport_set_dtr(1);
-//    usleep(100);
-//    serialport_set_dtr(0);
+    espcomm_board_reset_into_app(espcomm_board);
 }
 
 uint32_t espcomm_calc_checksum(unsigned char *data, uint16_t data_size)
@@ -226,7 +222,6 @@ static int espcomm_sync(void)
 
 int espcomm_open(void)
 {
-    
     if(serialport_open(espcomm_port, espcomm_baudrate))
     {
        LOGINFO("opening bootloader");
@@ -239,7 +234,6 @@ int espcomm_open(void)
 void espcomm_close(void)
 {
     LOGINFO("closing bootloader");
-    espcomm_reset_to_exec();
     serialport_close();
 }
 
@@ -402,3 +396,21 @@ int espcomm_set_address(const char *address)
     espcomm_address = new_address;
     return 1;
 }
+
+int espcomm_set_board(const char* name)
+{
+    LOGDEBUG("setting board to %s", name);
+    espcomm_board = espcomm_board_by_name(name);
+    if (!espcomm_board)
+    {
+        LOGERR("unknown board: %s", name);
+        INFO("known boards are: ");
+        for (espcomm_board_t* b = espcomm_board_first(); b; b = espcomm_board_next(b))
+        {
+            INFO("%s ", espcomm_board_name(b));
+        }
+        INFO("\n");
+    }
+    return 1;
+}
+

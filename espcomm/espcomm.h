@@ -62,6 +62,7 @@ typedef struct
 int espcomm_set_port(char *port);
 int espcomm_set_baudrate(const char *baudrate);
 int espcomm_set_address(const char *address);
+int espcomm_set_board(const char* name);
 
 int espcomm_open(void);
 void espcomm_close(void);

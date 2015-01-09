@@ -86,6 +86,16 @@ int argparse_commcmd(int num_args, char **arg_ptr)
                 }
                 break;
 
+            case 'd':
+                if (num_args < 1)
+                {
+                    return 0;
+                }
+                if (espcomm_set_board(arg_ptr[0]))
+                {
+                    return 2;
+                }
+
             default:
                 return 0;
                 break;
