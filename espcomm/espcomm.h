@@ -67,5 +67,7 @@ int espcomm_open(void);
 void espcomm_close(void);
 
 int espcomm_upload_file(char *name);
+int espcomm_file_uploaded();
+int espcomm_start_app(int reboot);
 
 #endif

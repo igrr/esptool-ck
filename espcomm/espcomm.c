@@ -58,15 +58,19 @@ static unsigned char sync_frame[36] = { 0x07, 0x07, 0x12, 0x20,
 static uint32_t flash_packet[BLOCKSIZE_FLASH+32];
 //static uint32_t ram_packet[BLOCKSIZE_RAM+32];
 
+static int file_uploaded = 0;
+
 static void espcomm_enter_boot(void)
 {
-    serialport_set_dtr(0);
-    usleep(10);
     serialport_set_dtr(1);
+    serialport_set_rts(1);
+    usleep(1000);
+    serialport_set_dtr(0);
 }
 
 static void espcomm_reset_to_exec(void)
 {
+    serialport_set_rts(0);
 //    serialport_set_dtr(0);
 //    usleep(10);
 //    serialport_set_dtr(1);
@@ -248,7 +252,6 @@ int espcomm_start_flash(uint32_t size, uint32_t address)
 
 int espcomm_upload_file(char *name)
 {
-    int reboot_when_done = 0;
     LOGDEBUG("espcomm_upload_file");
     FILE *f;
     struct stat st;
@@ -314,11 +317,8 @@ int espcomm_upload_file(char *name)
                     fflush(stdout);
                 }
                 INFO("\n");
-                flash_packet[0] = (reboot_when_done)?0:1;
-                res = espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) &flash_packet, 4);
-//                iprintf(101, "");
             }
-            
+            file_uploaded = 1;
             fclose(f);
             espcomm_close();
             return 1;
@@ -337,6 +337,40 @@ int espcomm_upload_file(char *name)
     return 0;
 }
 
+int espcomm_start_app(int reboot)
+{
+    if(!espcomm_open())
+    {
+        LOGDEBUG("espcomm_open failed");
+    }
+
+    if (reboot)
+    {
+        LOGINFO("starting app with reboot");
+        flash_packet[0] = 0;
+    }
+    else
+    {
+        LOGINFO("starting app without reboot");
+        flash_packet[0] = 1;
+    }
+    
+    int res = espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) &flash_packet, 4);
+    if (res == 0)
+    {
+        LOGERR("failed to start app");
+        return 0;
+    }
+    file_uploaded = 0;
+
+    espcomm_close();
+    return 1;
+}
+
+int espcomm_file_uploaded()
+{
+    return file_uploaded;
+}
 
 int espcomm_set_port(char *port)
 {
