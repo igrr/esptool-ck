@@ -31,9 +31,10 @@ int serialport_close(void);
 void serialport_set_dtr(unsigned char val);
 void serialport_set_rts(unsigned char val);
 void serialport_set_timeout(unsigned int timeout);
-
 void serialport_drain(void);
 void serialport_flush(void);
+unsigned serialport_read(unsigned char* data, unsigned int size);
+unsigned serialport_write(const unsigned char* data, unsigned int size);
 
 int serialport_send_slip(unsigned char *data, unsigned int size);
 int serialport_receive_slip(unsigned char *data, unsigned int size);

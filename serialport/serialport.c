@@ -26,18 +26,180 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#if defined (_WIN32)
+#include <Windows.h>
+#else
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <termios.h>
+#endif
 
 #include "serialport.h"
 #include "infohelper.h"
 
+#if defined (_WIN32)
+static HANDLE sPort = NULL;
+static DCB sDCB;
+static COMMTIMEOUTS sTIMEOUTS;
+#else
 static int serial_port = -1;
 static struct termios term;
 static unsigned int old_timeout;
+#endif
+
+
+#ifdef _WIN32
+void serialport_setbaudrate(unsigned int baudrate)
+{
+	DWORD br = 0;
+	switch(baudrate)
+	{
+		case 9600: 		br = CBR_9600; 		break;
+		case 14400: 	br = CBR_14400; 	break;
+		case 19200: 	br = CBR_19200; 	break;
+		case 38400: 	br = CBR_38400; 	break;
+		case 56000: 	br = CBR_56000; 	break;
+		case 57600: 	br = CBR_57600; 	break;
+		case 115200: 	br = CBR_115200; 	break;
+		case 128000: 	br = CBR_128000; 	break;
+		case 256000:	br = CBR_256000;	break;
+	}
+	if (br == 0)
+	{
+		LOGWARN("unsupported baud rate: %d, using 115200", baudrate);
+		br = CBR_115200;
+	}
+	
+	memset(&sDCB, 0, sizeof(DCB));
+	BuildCommDCB("baud=9600 parity=N data=8 stop=1",&sDCB);
+	sDCB.DCBlength		= 	sizeof(DCB);
+	sDCB.BaudRate		= 	br;
+	sDCB.fBinary		=	TRUE;
+	sDCB.fParity		=	FALSE;
+//	sDCB.fOutxCtsFlow 	=	TRUE;
+	sDCB.fDtrControl	=	DTR_CONTROL_DISABLE;
+	sDCB.fDsrSensitivity=	FALSE;
+	sDCB.fRtsControl	=	RTS_CONTROL_DISABLE;
+	sDCB.ByteSize		=	8;
+	sDCB.StopBits 		= 	ONESTOPBIT;
+	sDCB.fAbortOnError	=	FALSE;
+	sDCB.fOutX			=	FALSE;
+	sDCB.fInX			=	FALSE;
+	if (!SetCommState(sPort, &sDCB))
+	{
+		LOGERR("SetCommState call failed");
+	}
+}
+
+int serialport_open(const char *device, unsigned int baudrate)
+{
+	char portName[40];
+	sprintf(portName,"\\\\.\\%s", device);
+	sPort = CreateFile(portName, GENERIC_WRITE|GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+	if (sPort == INVALID_HANDLE_VALUE) 
+	{
+		return 0;
+	}
+	
+	SetupComm(sPort, 256, 256);
+	serialport_setbaudrate(baudrate);
+	serialport_set_timeout(1);
+	return 1;
+}
+
+void serialport_set_timeout(unsigned int timeout)
+{
+	LOGDEBUG("setting serial port timeouts to %d ms", timeout);
+	sTIMEOUTS.ReadIntervalTimeout 			= 10;
+	sTIMEOUTS.ReadTotalTimeoutConstant 		= 1000*timeout;
+	sTIMEOUTS.ReadTotalTimeoutMultiplier 	= 100;
+	sTIMEOUTS.WriteTotalTimeoutConstant 	= 1000*timeout;
+	sTIMEOUTS.WriteTotalTimeoutMultiplier 	= 100;
+	if (!SetCommTimeouts(sPort,&sTIMEOUTS))
+	{
+		LOGERR("SetCommTimeouts call failed");
+	}
+	SetCommMask(sPort, EV_TXEMPTY);
+}
+
+unsigned serialport_read(unsigned char* data, unsigned int size)
+{
+	unsigned long cb;
+	ReadFile(sPort, data, size, &cb, NULL);
+	if (cb != size)
+	{
+		LOGERR("read %d, requested %d", cb, size);
+	}
+	return (unsigned) cb;
+}
+
+unsigned serialport_write(const unsigned char* data, unsigned int size)
+{
+	unsigned long cb;
+	WriteFile(sPort, data, size, &cb, NULL);
+	if (cb != size)
+	{
+		LOGERR("wrote %d, requested %d", cb, size);
+	}
+	return (unsigned) cb; 
+}
+
+void serialport_flush(void)
+{
+    if(sPort)
+    {
+		PurgeComm(sPort, PURGE_TXCLEAR|PURGE_RXCLEAR);
+    }
+}
+
+void serialport_drain(void)
+{
+    if(sPort)
+    {
+	//	DWORD event;
+	//	do
+	//	{
+	//		WaitCommEvent(sPort, &event, NULL);
+	//		LOGDEBUG("WaitCommEvent %08x", event);
+	//	}
+	//	while(!(event & EV_TXEMPTY));
+		
+    }
+}
+
+int serialport_close(void)
+{
+    if(!sPort)
+		return 0;
+	serialport_drain();
+	serialport_flush();
+	CloseHandle(sPort);
+	sPort = NULL;
+	return 1;
+}
+
+void serialport_set_dtr(unsigned char val)
+{
+    if(sPort)
+    {
+		EscapeCommFunction(sPort,((val)?SETDTR:CLRDTR));
+    }
+}
+
+void serialport_set_rts(unsigned char val)
+{
+    if(sPort)
+    {
+		EscapeCommFunction(sPort,((val)?SETRTS:CLRRTS));
+    }
+}
+
+
+#else
 
 void serialport_set_baudrate(unsigned int baudrate)
 {
@@ -59,8 +221,8 @@ void serialport_set_baudrate(unsigned int baudrate)
             break;
             
         case 19200:
-            cfsetispeed(&term,B38400);
-            cfsetospeed(&term,B38400);
+            cfsetispeed(&term,B19200);
+            cfsetospeed(&term,B19200);
             break;
             
         case 38400:
@@ -191,165 +353,14 @@ int serialport_open(const char *device, unsigned int baudrate)
     return serial_port;
 }
 
-static unsigned char subst_C0[2] = { 0xDB, 0xDC };
-static unsigned char subst_DB[2] = { 0xDB, 0xDD };
-
-#define STATIC_SLIP_BUF_SIZE 4096
-int serialport_send_slip_static(unsigned char *data, unsigned int size)
+unsigned serialport_read(unsigned char* data, unsigned int size)
 {
-    unsigned char buf[STATIC_SLIP_BUF_SIZE];
-    unsigned out_pos = 0;
-    for (int i = 0; i < size; ++i)
-    {
-        unsigned char cur = data[i];
-        if (cur == 0xC0)
-        {
-            buf[out_pos++] = subst_C0[0];
-            buf[out_pos++] = subst_C0[1];
-        }
-        else if (cur == 0xDB)
-        {
-            buf[out_pos++] = subst_DB[0];
-            buf[out_pos++] = subst_DB[1];
-        }
-        else
-            buf[out_pos++] = cur;
-    }
-    
-    if(write(serial_port, buf, out_pos) != out_pos)
-    {
-        LOGERR("failed sending %d bytes", out_pos);
-        return 0;
-    }
-    tcdrain(serial_port);
-    return size;
+	return write(serial_port, data, size);
 }
 
-int serialport_send_slip(unsigned char *data, unsigned int size)
+unsigned serialport_write(const unsigned char* data, unsigned int size)
 {
-    unsigned int sent;
-    unsigned char cur_byte;
-    
-    if (size < STATIC_SLIP_BUF_SIZE / 2)
-        return serialport_send_slip_static(data, size);
-    
-    sent = 0;
-    
-    while(sent != size)
-    {
-        cur_byte = *data++;
-        if(cur_byte == 0xC0)
-        {
-            if(write(serial_port, subst_C0, 2) != 2)
-            {
-                LOGERR("failed substituting 0xC0");
-                return 0;
-            }
-        }
-        else if(cur_byte == 0xDB)
-        {
-            if(write(serial_port, subst_DB, 2) != 2)
-            {
-                LOGERR("failed substituting 0xDB");
-                return 0;
-            }
-        }
-        else
-        {
-            if(write(serial_port, &cur_byte, 1) != 1)
-            {
-                LOGERR("failed sending byte %i", sent);
-                return 0;
-            }
-        }
-        sent++;
-    }
-
-    tcdrain(serial_port);
-    
-    return sent;
-}
-
-int serialport_receive_slip(unsigned char *data, unsigned int size)
-{
-    unsigned int received;
-    unsigned char cur_byte;
-    
-    received = 0;
-    
-    while(received != size)
-    {
-        if(read(serial_port, &cur_byte, 1) != 1)
-        {
-            LOGERR("failed reading byte");
-            return 0;
-        }
-        
-        if(cur_byte == 0xDB)
-        {
-            if(read(serial_port, &cur_byte, 1) != 1)
-            {
-                LOGERR("failed reading byte for unslip");
-                return 0;
-            }
-            
-            if(cur_byte == 0xDC)
-            {
-                *data++ = 0xC0;
-            }
-            else if(cur_byte == 0xDD)
-            {
-                *data++ = 0xDB;
-            }
-            else
-            {
-                LOGERR("unslip sequence wrong");
-                return 0;
-            }
-        }
-        else
-        {
-            *data++ = cur_byte;
-        }
-        
-        received++;
-    }
-
-    return received;
-}
-
-int serialport_send_C0(void)
-{
-    unsigned char b;
-
-    b = 0xC0;
-    
-    if(write(serial_port, &b, 1) != 1)
-    {
-        LOGERR("failed sending 0xC0");
-        return 0;
-    }
-    serialport_drain();
-    return 1;
-}
-
-int serialport_receive_C0(void)
-{
-    unsigned char b;
-    
-    b = 0x00;
-    
-    if(read(serial_port, &b, 1) != 1)
-    {
-        return 0;
-    }
-    
-    if(b != 0xC0)
-    {
-        return 0;
-    }
-    
-    return 1;
+	return read(serial_port, data, size);
 }
 
 void serialport_flush(void)
@@ -365,7 +376,7 @@ void serialport_flush(void)
         
         tcdrain(serial_port);
         
-        while(read(serial_port, &b, 1) > 0) { tcflush(serial_port, TCIOFLUSH); };
+        while(serialport_read(&b, 1) > 0) { tcflush(serial_port, TCIOFLUSH); };
        
         serialport_set_timeout(t);
     }
@@ -436,3 +447,166 @@ void serialport_set_rts(unsigned char val)
     }
 }
 
+
+
+#endif
+static unsigned char subst_C0[2] = { 0xDB, 0xDC };
+static unsigned char subst_DB[2] = { 0xDB, 0xDD };
+
+#define STATIC_SLIP_BUF_SIZE 4096
+int serialport_send_slip_static(unsigned char *data, unsigned int size)
+{
+    unsigned char buf[STATIC_SLIP_BUF_SIZE];
+    unsigned out_pos = 0;
+    for (int i = 0; i < size; ++i)
+    {
+        unsigned char cur = data[i];
+        if (cur == 0xC0)
+        {
+            buf[out_pos++] = subst_C0[0];
+            buf[out_pos++] = subst_C0[1];
+        }
+        else if (cur == 0xDB)
+        {
+            buf[out_pos++] = subst_DB[0];
+            buf[out_pos++] = subst_DB[1];
+        }
+        else
+            buf[out_pos++] = cur;
+    }
+    
+    if(serialport_write(buf, out_pos) != out_pos)
+    {
+        LOGERR("failed sending %d bytes", out_pos);
+        return 0;
+    }
+    serialport_drain();
+    return size;
+}
+
+int serialport_send_slip(unsigned char *data, unsigned int size)
+{
+    unsigned int sent;
+    unsigned char cur_byte;
+    
+    if (size < STATIC_SLIP_BUF_SIZE / 2)
+        return serialport_send_slip_static(data, size);
+    
+    sent = 0;
+    
+    while(sent != size)
+    {
+        cur_byte = *data++;
+        if(cur_byte == 0xC0)
+        {
+            if(serialport_write(subst_C0, 2) != 2)
+            {
+                LOGERR("failed substituting 0xC0");
+                return 0;
+            }
+        }
+        else if(cur_byte == 0xDB)
+        {
+            if(serialport_write(subst_DB, 2) != 2)
+            {
+                LOGERR("failed substituting 0xDB");
+                return 0;
+            }
+        }
+        else
+        {
+            if(serialport_write(&cur_byte, 1) != 1)
+            {
+                LOGERR("failed sending byte %i", sent);
+                return 0;
+            }
+        }
+        sent++;
+    }
+
+    serialport_drain();
+    
+    return sent;
+}
+
+int serialport_receive_slip(unsigned char *data, unsigned int size)
+{
+    unsigned int received;
+    unsigned char cur_byte;
+    
+    received = 0;
+    
+    while(received != size)
+    {
+        if(serialport_read(&cur_byte, 1) != 1)
+        {
+            LOGERR("failed reading byte");
+            return 0;
+        }
+        
+        if(cur_byte == 0xDB)
+        {
+            if(serialport_read(&cur_byte, 1) != 1)
+            {
+                LOGERR("failed reading byte for unslip");
+                return 0;
+            }
+            
+            if(cur_byte == 0xDC)
+            {
+                *data++ = 0xC0;
+            }
+            else if(cur_byte == 0xDD)
+            {
+                *data++ = 0xDB;
+            }
+            else
+            {
+                LOGERR("unslip sequence wrong");
+                return 0;
+            }
+        }
+        else
+        {
+            *data++ = cur_byte;
+        }
+        
+        received++;
+    }
+
+    return received;
+}
+
+int serialport_send_C0(void)
+{
+    unsigned char b;
+
+    b = 0xC0;
+    
+    if(serialport_write(&b, 1) != 1)
+    {
+        LOGERR("failed sending 0xC0");
+        return 0;
+    }
+    serialport_drain();
+    return 1;
+}
+
+int serialport_receive_C0(void)
+{
+    unsigned char b;
+    
+    b = 0x00;
+    
+    if(serialport_read(&b, 1) != 1)
+    {
+        return 0;
+    }
+    
+    if(b != 0xC0)
+    {
+        return 0;
+    }
+    
+    return 1;
+}
