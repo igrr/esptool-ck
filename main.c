@@ -66,7 +66,10 @@ int main(int argc, char **argv)
         arg_ptr += num_args_parsed;
     }
     
-
+    if (espcomm_file_uploaded())
+    {
+        espcomm_start_app(0);
+    }
     close_elf_object();
     binimage_write_close(16);
     return 0;
