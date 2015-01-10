@@ -349,12 +349,12 @@ int serialport_open(const char *device, unsigned int baudrate)
 
 unsigned serialport_read(unsigned char* data, unsigned int size)
 {
-	return write(serial_port, data, size);
+	return read(serial_port, data, size);
 }
 
 unsigned serialport_write(const unsigned char* data, unsigned int size)
 {
-	return read(serial_port, data, size);
+	return write(serial_port, data, size);
 }
 
 void serialport_flush(void)
