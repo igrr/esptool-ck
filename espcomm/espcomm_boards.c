@@ -2,6 +2,7 @@
 #include <string.h>
 #include "espcomm_boards.h"
 #include "serialport.h"
+#include "delay.h"
 
 struct espcomm_board_
 {
@@ -38,7 +39,7 @@ espcomm_board_t* espcomm_board_next(espcomm_board_t* board)
 
 const char* espcomm_board_name(espcomm_board_t* board)
 {
-    return board->name;
+    return (board)?board->name:"";
 }
 
 void espcomm_board_reset_into_bootloader(espcomm_board_t* board)
@@ -67,9 +68,9 @@ void board_ck_rb()
 {
     serialport_set_rts(1);
     serialport_set_dtr(1);
-    usleep(100);
+    espcomm_delay_ms(5);
     serialport_set_rts(0);
-    usleep(30000);
+    espcomm_delay_ms(30);
     serialport_set_dtr(1);
 }
 
@@ -77,7 +78,7 @@ void board_ck_ra()
 {
     serialport_set_rts(1);
     serialport_set_dtr(0);
-    usleep(100);
+    espcomm_delay_ms(5);
     serialport_set_rts(0);
 }
 
@@ -86,14 +87,14 @@ void board_ck_ra()
 void board_wifio_rb()
 {
     serialport_set_dtr(0);
-    usleep(30000);
+    espcomm_delay_ms(30);
     serialport_set_dtr(1);
 }
 
 void board_wifio_ra()
 {
     serialport_set_dtr(0);
-    usleep(100);
+    espcomm_delay_ms(5);
     serialport_set_dtr(1);
 }
 

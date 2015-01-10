@@ -28,16 +28,20 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include "infohelper.h"
 #include "espcomm.h"
 #include "serialport.h"
 #include "espcomm_boards.h"
+#include "delay.h"
 
 bootloader_packet send_packet;
 bootloader_packet receive_packet;
 
 static espcomm_board_t* espcomm_board = 0;
+static bool sync_stage = false;
+static bool upload_stage = false;
 
 static const char *espcomm_port =
 #if defined(LINUX)
@@ -89,7 +93,7 @@ uint32_t espcomm_calc_checksum(unsigned char *data, uint16_t data_size)
     return result;
 }
 
-static uint32_t espcomm_send_command(unsigned char command, unsigned char *data, uint16_t data_size)
+static uint32_t espcomm_send_command(unsigned char command, unsigned char *data, uint16_t data_size, int delay)
 {
     uint32_t result;
     uint32_t cnt;
@@ -102,13 +106,19 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
     
     serialport_send_C0();
 
-    LOGDEBUG("espcomm_cmd: sending command header");
-    
+    if (!upload_stage)
+        LOGDEBUG("espcomm_cmd: sending command header");
+    else
+        LOGVERBOSE("espcomm_cmd: sending command header");
+
     serialport_send_slip((unsigned char*) &send_packet, 8);
     
     if(data_size)
     {
-        LOGDEBUG("espcomm_cmd: sending command payload");
+        if (!upload_stage)
+            LOGDEBUG("espcomm_cmd: sending command payload");
+        else
+            LOGVERBOSE("espcomm_cmd: sending command payload");
         serialport_send_slip(data, data_size);
     }
     else
@@ -119,6 +129,12 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
     serialport_send_C0();
 
     serialport_drain();
+
+    LOGVERBOSE("waiting %dms...", delay);
+
+    espcomm_delay_ms(delay);
+
+    LOGVERBOSE("wait complete");
     
     if(serialport_receive_C0())
     {
@@ -126,7 +142,11 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
         {
             if(receive_packet.size)
             {
-                LOGDEBUG("espcomm cmd: receiving %i bytes of data", receive_packet.size);
+                if (!upload_stage)
+                    LOGDEBUG("espcomm cmd: receiving %i bytes of data", receive_packet.size);
+                else
+                    LOGVERBOSE("espcomm cmd: receiving %i bytes of data", receive_packet.size);
+
                 if(receive_packet.data)
                 {
                     free(receive_packet.data);
@@ -166,7 +186,10 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
             }
             else
             {
-                LOGWARN("espcomm cmd: no final C0");
+                if (!sync_stage)
+                    LOGWARN("espcomm cmd: no final C0");
+                else
+                    LOGVERBOSE("espcomm cmd: no final C0");
 				return 0;
             }
         }
@@ -178,7 +201,10 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
     }
     else
     {
-        LOGWARN("espcomm cmd: didn't receive C0");
+        if (!sync_stage)
+            LOGWARN("espcomm cmd: didn't receive C0");
+        else
+            LOGVERBOSE("espcomm cmd: didn't receive C0");
 		return 0;
     }
     
@@ -189,33 +215,28 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
 
 static int espcomm_sync(void)
 {
-    unsigned char retry, retry2;
-    
-	usleep(10000);
-    serialport_flush();
-    retry2 = 0;
-    
-    while(retry2++ < 4)
+    sync_stage = true;
+    for (int retry_boot = 0; retry_boot < 3; ++retry_boot)
     {
-        retry = 0;
-
+        LOGINFO("resetting board");
         espcomm_enter_boot();
-        serialport_flush();
-        
-        while(retry++ < 2)
+        for (int retry_sync = 0; retry_sync < 2; ++retry_sync)
         {
-            send_packet.checksum = espcomm_calc_checksum((unsigned char*)&sync_frame, 36);
-            
+            LOGINFO("trying to connect");
             serialport_flush();
-            
-            if(espcomm_send_command(SYNC_FRAME, (unsigned char*) &sync_frame, 36) == 0x20120707)
+            espcomm_delay_ms(10);
+
+            send_packet.checksum = espcomm_calc_checksum((unsigned char*)&sync_frame, 36);
+            if(espcomm_send_command(SYNC_FRAME, (unsigned char*) &sync_frame, 36, 0) == 0x20120707)
             {
-				usleep(10000);
+				espcomm_delay_ms(10);
                 serialport_flush();
+                sync_stage = false;
                 return 1;
             }
         }
     }
+    sync_stage = false;
     LOGWARN("espcomm_sync failed");
     return 0;
 }
@@ -247,7 +268,9 @@ int espcomm_start_flash(uint32_t size, uint32_t address)
     flash_packet[3] = address;
     
     send_packet.checksum = espcomm_calc_checksum((unsigned char*) flash_packet, 16);
-    res = espcomm_send_command(FLASH_DOWNLOAD_BEGIN, (unsigned char*) &flash_packet, 16);
+    int delay = size / 1000 * 3;
+    LOGDEBUG("calculated erase delay: %d", delay);
+    res = espcomm_send_command(FLASH_DOWNLOAD_BEGIN, (unsigned char*) &flash_packet, 16, 1000);
     return res;
 }
 
@@ -296,7 +319,7 @@ int espcomm_upload_file(char *name)
 				}
                 
                 LOGDEBUG("writing flash");
-                
+                upload_stage = true;
                 while(fsize)
                 {
                     flash_packet[0] = (uint32_t) fread(&flash_packet[4], 1, BLOCKSIZE_FLASH, f);
@@ -307,15 +330,15 @@ int espcomm_upload_file(char *name)
                     flash_packet[3] = 0;
                     
                     send_packet.checksum = espcomm_calc_checksum((unsigned char *) &flash_packet[4], flash_packet[0]);
-                    res = espcomm_send_command(FLASH_DOWNLOAD_DATA, (unsigned char*) &flash_packet, flash_packet[0]+16);
+                    res = espcomm_send_command(FLASH_DOWNLOAD_DATA, (unsigned char*) &flash_packet, flash_packet[0]+16, 0);
                     
                     if(res == 0)
                     {
 						LOGWARN("espcomm_send_command(FLASH_DOWNLOAD_DATA) failed");
-                        res = espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) &flash_packet, 4);
+                        res = espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) &flash_packet, 4, 0);
                         fclose(f);
                         espcomm_close();
-
+                        upload_stage = false;
                         return 0;
                     }
                     
@@ -324,6 +347,7 @@ int espcomm_upload_file(char *name)
                     INFO(".");
                     fflush(stdout);
                 }
+                upload_stage = false;
                 INFO("\n");
             }
             file_uploaded = 1;
@@ -362,7 +386,7 @@ int espcomm_start_app(int reboot)
         flash_packet[0] = 1;
     }
     
-    espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) &flash_packet, 4);
+    espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) &flash_packet, 4, 0);
     file_uploaded = 0;
 
     espcomm_close();
