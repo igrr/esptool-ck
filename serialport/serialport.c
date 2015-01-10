@@ -108,7 +108,7 @@ int serialport_open(const char *device, unsigned int baudrate)
 	
 	SetupComm(sPort, 256, 256);
 	serialport_setbaudrate(baudrate);
-	serialport_set_timeout(2000);
+	serialport_set_timeout(1000);
 	return 1;
 }
 
@@ -117,9 +117,9 @@ void serialport_set_timeout(unsigned int timeout)
 	LOGDEBUG("setting serial port timeouts to %d ms", timeout);
 	sTIMEOUTS.ReadIntervalTimeout 			= 0;
 	sTIMEOUTS.ReadTotalTimeoutConstant 		= timeout;
-	sTIMEOUTS.ReadTotalTimeoutMultiplier 	= 10;
+	sTIMEOUTS.ReadTotalTimeoutMultiplier 	= 0;
 	sTIMEOUTS.WriteTotalTimeoutConstant 	= timeout;
-	sTIMEOUTS.WriteTotalTimeoutMultiplier 	= 10;
+	sTIMEOUTS.WriteTotalTimeoutMultiplier 	= 0;
 	if (!SetCommTimeouts(sPort,&sTIMEOUTS))
 	{
 		LOGDEBUG("SetCommTimeouts call failed");
@@ -151,9 +151,22 @@ unsigned serialport_write(const unsigned char* data, unsigned int size)
 
 void serialport_flush(void)
 {
+	unsigned char tmp[512];
     if(sPort)
     {
+		LOGDEBUG("flush start"); 
+		unsigned old_timeout = sTIMEOUTS.ReadTotalTimeoutConstant;
+		serialport_set_timeout(1);
+		ClearCommError(sPort, NULL, NULL);
 		PurgeComm(sPort, PURGE_TXCLEAR|PURGE_RXCLEAR);
+		unsigned long cb;
+		int result;
+		do {
+			result = ReadFile(sPort, tmp, 512, &cb, NULL);
+			LOGVERBOSE("flushed %lu bytes", cb);
+		} while(cb && result == 0);
+		serialport_set_timeout(old_timeout);
+		LOGDEBUG("flush complete");
     }
 }
 
@@ -163,6 +176,7 @@ void serialport_drain(void)
     {
 		FlushFileBuffers(sPort);
     }
+	
 }
 
 int serialport_close(void)
@@ -599,7 +613,7 @@ int serialport_receive_C0(void)
     
     if(b != 0xC0)
     {
-		LOGERR("serialport_receive_C0: something else instead of C0");
+		LOGDEBUG("serialport_receive_C0: %02X instead of C0", b);
         return 0;
     }
     

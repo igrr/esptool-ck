@@ -42,6 +42,7 @@ bootloader_packet receive_packet;
 static espcomm_board_t* espcomm_board = 0;
 static bool sync_stage = false;
 static bool upload_stage = false;
+static bool espcomm_is_open = false;
 
 static const char *espcomm_port =
 #if defined(LINUX)
@@ -220,11 +221,11 @@ static int espcomm_sync(void)
     {
         LOGINFO("resetting board");
         espcomm_enter_boot();
-        for (int retry_sync = 0; retry_sync < 2; ++retry_sync)
+		espcomm_delay_ms(45);
+        for (int retry_sync = 0; retry_sync < 3; ++retry_sync)
         {
             LOGINFO("trying to connect");
             serialport_flush();
-            espcomm_delay_ms(10);
 
             send_packet.checksum = espcomm_calc_checksum((unsigned char*)&sync_frame, 36);
             if(espcomm_send_command(SYNC_FRAME, (unsigned char*) &sync_frame, 36, 0) == 0x20120707)
@@ -234,6 +235,8 @@ static int espcomm_sync(void)
                 sync_stage = false;
                 return 1;
             }
+			
+			espcomm_delay_ms(10);
         }
     }
     sync_stage = false;
@@ -243,10 +246,17 @@ static int espcomm_sync(void)
 
 int espcomm_open(void)
 {
+	if (espcomm_is_open)
+		return 1;
+		
     if(serialport_open(espcomm_port, espcomm_baudrate))
     {
-       LOGINFO("opening bootloader");
-        return espcomm_sync();
+        LOGINFO("opening bootloader");
+		if (espcomm_sync())
+		{
+			espcomm_is_open = true;
+			return 1;
+		}
     }
     
     return 0;
@@ -268,7 +278,7 @@ int espcomm_start_flash(uint32_t size, uint32_t address)
     flash_packet[3] = address;
     
     send_packet.checksum = espcomm_calc_checksum((unsigned char*) flash_packet, 16);
-    int delay = size / 1000 * 3;
+    int delay = size / 1000 * 3 + 500;
     LOGDEBUG("calculated erase delay: %d", delay);
     res = espcomm_send_command(FLASH_DOWNLOAD_BEGIN, (unsigned char*) &flash_packet, 16, 1000);
     return res;
@@ -352,7 +362,7 @@ int espcomm_upload_file(char *name)
             }
             file_uploaded = 1;
             fclose(f);
-            espcomm_close();
+            //espcomm_close();
             return 1;
         }
         else
