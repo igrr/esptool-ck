@@ -1,5 +1,7 @@
-esptool is a tool to allow the creation and handling of firmware
-files suitable for the ESP8266 chip.
+esptool is a tool to allow the creation of firmware files suitable 
+for the ESP8266 chip, and flashing those file to the chip.
+
+esptool runs on Windows, Linux and Mac OS X.
 
 It can read a code file in the ELF format that the compilers produce.
 From there it is possible to extract various sections that are present
@@ -12,7 +14,7 @@ given on the commandline, and in the order they are given.
 
 The following commands are currently available:
 
--eo <filename> :        Opens an ELF object file, parses it and caches
+-eo <filename>          Opens an ELF object file, parses it and caches
                         some of the information found therein.
                         Only works if there is no ELF file currently
                         opened.
@@ -39,7 +41,7 @@ The following commands are currently available:
 
 -v                      Increase verbosity level of the tool
                         Add more v's to increase it more, e.g.
-                        -vv, -vvv, -vvvv, etc.
+                        -vv, -vvv.
 
 -q                      Disable most of the output.
 
@@ -47,6 +49,16 @@ The following commands are currently available:
                         communicating with the ESP.
                         Default is /dev/ttyUSB0 on Linux, 
                         COM1 on Windows, /dev/tty.usbserial on Mac OS X.
+
+-cd <board>             Select the reset method to use for resetting
+                        the board. Currently supported methods are:
+
+        none            No DTR/RTS manipulation
+
+        ck              RTS controls RESET or CH_PD, DTR controls GPIO0
+
+        wifio           DTR controls GPIO0 via PNP transistor and RESET
+                        via a capacitor
 
 -cb <baudrate>          Select the baudrate to use, default is 115200
 
