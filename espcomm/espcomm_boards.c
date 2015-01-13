@@ -62,7 +62,7 @@ void espcomm_board_reset_into_app(espcomm_board_t* board)
 //
 //
 
-// "ck" board: rts pulls down reset, dtr pulls down gpio0 
+// "ck" board: dtr pulls down gpio0, rts pulls down reset 
 
 void board_ck_rb()
 {
@@ -70,14 +70,14 @@ void board_ck_rb()
     serialport_set_dtr(1);
     espcomm_delay_ms(5);
     serialport_set_rts(0);
-    espcomm_delay_ms(30);
-    serialport_set_dtr(1);
+    espcomm_delay_ms(50);
+    serialport_set_dtr(0);
 }
 
 void board_ck_ra()
 {
-    serialport_set_rts(1);
     serialport_set_dtr(0);
+    serialport_set_rts(1);
     espcomm_delay_ms(5);
     serialport_set_rts(0);
 }
