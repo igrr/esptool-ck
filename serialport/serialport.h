@@ -30,6 +30,7 @@ int serialport_open(const char *dev, unsigned int baudrate);
 int serialport_close(void);
 void serialport_set_dtr(unsigned char val);
 void serialport_set_rts(unsigned char val);
+void serialport_send_break();
 void serialport_set_timeout(unsigned int timeout);
 void serialport_drain(void);
 void serialport_flush(void);

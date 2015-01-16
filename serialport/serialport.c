@@ -206,6 +206,16 @@ void serialport_set_rts(unsigned char val)
     }
 }
 
+void serialport_send_break()
+{
+    if (sPort)
+    {
+        EscapeCommFunction(sPort, SETBREAK);
+        Sleep(250);
+        EscapeCommFunction(sPort, CLRBREAK);
+    }
+}
+
 
 #else
 
@@ -453,6 +463,11 @@ void serialport_set_rts(unsigned char val)
             ioctl (serial_port, TIOCMSET, &mcs);
         }
     }
+}
+
+void serialport_send_break()
+{
+    tcsendbreak(serial_port, 0);
 }
 
 
