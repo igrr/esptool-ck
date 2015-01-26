@@ -127,6 +127,11 @@ void serialport_set_timeout(unsigned int timeout)
 	SetCommMask(sPort, EV_TXEMPTY);
 }
 
+unsigned serialport_get_timeout()
+{
+    return sTIMEOUTS.ReadTotalTimeoutConstant;
+}
+
 unsigned serialport_read(unsigned char* data, unsigned int size)
 {
 	unsigned long cb;
@@ -297,6 +302,12 @@ void serialport_set_timeout(unsigned int timeout)
         old_timeout = timeout;
     }
 }
+
+unsigned serialport_get_timeout()
+{
+    return old_timeout;
+}
+
 
 int serialport_open(const char *device, unsigned int baudrate)
 {

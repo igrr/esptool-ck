@@ -94,7 +94,7 @@ uint32_t espcomm_calc_checksum(unsigned char *data, uint16_t data_size)
     return result;
 }
 
-static uint32_t espcomm_send_command(unsigned char command, unsigned char *data, uint16_t data_size, int delay)
+static uint32_t espcomm_send_command(unsigned char command, unsigned char *data, uint16_t data_size, int reply_timeout)
 {
     uint32_t result;
     uint32_t cnt;
@@ -131,14 +131,18 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
 
     serialport_drain();
 
-    LOGVERBOSE("waiting %dms...", delay);
-
-    espcomm_delay_ms(delay);
-
-    LOGVERBOSE("wait complete");
+    int old_timeout = 0;
+    if (reply_timeout) 
+    {
+        old_timeout = serialport_get_timeout();
+        serialport_set_timeout(reply_timeout);
+    }
     
     if(serialport_receive_C0())
     {
+        if (old_timeout)
+            serialport_set_timeout(old_timeout);
+        
         if(serialport_receive_slip((unsigned char*) &receive_packet, 8))
         {
             if(receive_packet.size)
@@ -196,16 +200,19 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
         }
         else
         {
-            LOGWARN("espcomm cmd: can't receive command header response");
+            LOGWARN("espcomm cmd: can't receive command response header");
 			return 0;
         }
     }
     else
     {
+        if (old_timeout)
+            serialport_set_timeout(old_timeout);
+
         if (!sync_stage)
-            LOGWARN("espcomm cmd: didn't receive C0");
+            LOGWARN("espcomm cmd: didn't receive command response");
         else
-            LOGVERBOSE("espcomm cmd: didn't receive C0");
+            LOGVERBOSE("espcomm cmd: didn't receive command response");
 		return 0;
     }
     
@@ -270,6 +277,9 @@ void espcomm_close(void)
 
 int espcomm_start_flash(uint32_t size, uint32_t address)
 {
+    const int delay_per_erase_block_ms = 50;
+    const int erase_block_size = 4096;
+
     uint32_t res;
     
     flash_packet[0] = size;
@@ -278,9 +288,10 @@ int espcomm_start_flash(uint32_t size, uint32_t address)
     flash_packet[3] = address;
     
     send_packet.checksum = espcomm_calc_checksum((unsigned char*) flash_packet, 16);
-    int delay = size / 1000 * 3 + 500;
-    LOGDEBUG("calculated erase delay: %d", delay);
-    res = espcomm_send_command(FLASH_DOWNLOAD_BEGIN, (unsigned char*) &flash_packet, 16, 1000);
+
+    int timeout_ms = erase_block_size / 4096 * delay_per_erase_block_ms + 250;
+    LOGDEBUG("calculated erase delay: %dms", timeout_ms);
+    res = espcomm_send_command(FLASH_DOWNLOAD_BEGIN, (unsigned char*) &flash_packet, 16, timeout_ms);
     return res;
 }
 
