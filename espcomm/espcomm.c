@@ -289,7 +289,7 @@ int espcomm_start_flash(uint32_t size, uint32_t address)
     
     send_packet.checksum = espcomm_calc_checksum((unsigned char*) flash_packet, 16);
 
-    int timeout_ms = erase_block_size / 4096 * delay_per_erase_block_ms + 250;
+    int timeout_ms = size / erase_block_size * delay_per_erase_block_ms + 250;
     LOGDEBUG("calculated erase delay: %dms", timeout_ms);
     res = espcomm_send_command(FLASH_DOWNLOAD_BEGIN, (unsigned char*) &flash_packet, 16, timeout_ms);
     return res;
