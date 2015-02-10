@@ -1,12 +1,12 @@
 version: 1.0.{build}
-install:
-    - cinst mingw
+
 platform:
     - x86
+
 matrix:
     fast_finish: true
 
 build_script:
+    - SET PATH=C:\MinGW\bin;%PATH%
     - make all
  
-build: off
