@@ -1,4 +1,6 @@
-[![Build status](http://img.shields.io/travis/igrr/esptool-ck.svg)](https://travis-ci.org/igrr/esptool-ck)
+[![Linux build status](http://img.shields.io/travis/igrr/esptool-ck.svg)](https://travis-ci.org/igrr/esptool-ck)
+[![Windows build status](http://img.shields.io/appveyor/ci/igrr/esptool-ck.svg)](https://ci.appveyor.com/project/igrr/esptool-ck)
+
 
 **Esptool** is a tool to create firmware files for the ESP8266 chip and flash the firmware to the chip over serial port. Esptool runs on Windows, Linux and Mac OS X.
 
