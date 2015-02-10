@@ -1,8 +1,20 @@
-TARGET_ARCH	?= LINUX
-CFLAGS		= -std=c99 -Os -Wall
+CFLAGS		= -std=gnu99 -Os -Wall
 SDK_LIBDIR	=
 SDK_LIBS	=
-SDK_INCLUDES	=
+SDK_INCLUDES=
+
+ifeq ($(OS),Windows_NT)
+    TARGET_OS := WINDOWS
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        TARGET_OS := LINUX
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        TARGET_OS := OSX
+    endif
+endif
+
 
 CC		:= gcc
 LD		:= gcc
@@ -10,7 +22,7 @@ LD		:= gcc
 MODULES		:= infohelper elf binimage argparse serialport espcomm
 
 
--include local/Makefile.local.$(TARGET_ARCH)
+-include local/Makefile.local.$(TARGET_OS)
 SRC_DIR		:= $(MODULES)
 BUILD_DIR	:= $(addprefix build/,$(MODULES))
 
@@ -24,7 +36,7 @@ vpath %.c $(SRC_DIR)
 
 define make-goal
 $1/%.o: %.c
-	$(CC) $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) -D$(TARGET_ARCH) -c $$< -o $$@
+	$(CC) $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) -D$(TARGET_OS) -c $$< -o $$@
 endef
 
 .PHONY: all checkdirs clean
@@ -32,7 +44,7 @@ endef
 all: checkdirs $(TARGET)
 
 $(TARGET): $(OBJ) main.c
-	gcc $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) $(SDK_LIBDIR) $(SDK_LIBS) -D$(TARGET_ARCH) $(TARGET_FLAGS) $^ -o $@
+	gcc $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) $(SDK_LIBDIR) $(SDK_LIBS) -D$(TARGET_OS) $(TARGET_FLAGS) $^ -o $@
 	strip $(TARGET)
 
 

@@ -1,0 +1,10 @@
+language: cpp
+compiler:
+    - gcc
+script: make all
+notifications:
+    email:
+        recipients:
+            - igrr@users.noreply.github.com
+        on_success: change
+        on_failure: always
