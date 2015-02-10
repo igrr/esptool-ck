@@ -1,3 +1,5 @@
+[![Build status](http://img.shields.io/travis/igrr/esptool-ck.svg)](https://travis-ci.org/igrr/esptool-ck)
+
 esptool is a tool to allow the creation of firmware files suitable 
 for the ESP8266 chip, and flashing those file to the chip.
 
