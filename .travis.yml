@@ -15,3 +15,5 @@ deploy:
   file: esptool-$TRAVIS_TAG-linux64.zip
   on:
     repo: igrr/esptool-ck
+    tags: true
+    all_branches: true
