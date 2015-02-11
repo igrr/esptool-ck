@@ -29,7 +29,7 @@ build_script:
     - appveyor PushArtifact %PRODUCT_ZIP_SHA%
 
 deploy:
-    release: $(PRODUCT_NAME)
+    release: $(PRODUCT_VERSION)
     provider: GitHub
     auth_token:
         secure: 'PGg5fnoBpP1Omzr6f3KIYDiD8J30rretQjSl/MITRpzvSCmN88kM6VDMz1TBGZTA'
