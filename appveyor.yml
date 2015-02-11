@@ -20,7 +20,7 @@ build_script:
     - 7z a %PRODUCT_DIST_NAME%.zip %PRODUCT_DIST_NAME%
 
 artifacts:
-    - path: *.zip
+    - path: '*.zip'
 
 deploy:
     release: %PRODUCT_NAME%
