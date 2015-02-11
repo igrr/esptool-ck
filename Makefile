@@ -15,12 +15,9 @@ else
     endif
 endif
 
-
-CC		:= gcc
-LD		:= gcc
+VERSION ?= $(shell git describe --always)
 
 MODULES		:= infohelper elf binimage argparse serialport espcomm
-
 
 -include local/Makefile.local.$(TARGET_OS)
 SRC_DIR		:= $(MODULES)
@@ -32,11 +29,13 @@ INCLUDES	:= $(addprefix -I,$(SRC_DIR))
 
 CFLAGS += $(TARGET_CFLAGS)
 
+CCOPTS := $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" 
+
 vpath %.c $(SRC_DIR)
 
 define make-goal
 $1/%.o: %.c
-	$(CC) $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) -D$(TARGET_OS) -c $$< -o $$@
+	$(CC) $(CCOPTS)-c $$< -o $$@
 endef
 
 .PHONY: all checkdirs clean
@@ -44,9 +43,8 @@ endef
 all: checkdirs $(TARGET)
 
 $(TARGET): $(OBJ) main.c
-	gcc $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) $(SDK_LIBDIR) $(SDK_LIBS) -D$(TARGET_OS) $(TARGET_FLAGS) $^ -o $@
+	gcc $(SDK_LIBDIR) $(SDK_LIBS) $(CCOPTS) $^ -o $@
 	strip $(TARGET)
-
 
 checkdirs: $(BUILD_DIR)
 
