@@ -18,12 +18,10 @@ build_script:
     - mkdir %PRODUCT_DIST_NAME%
     - cp esptool.exe %PRODUCT_DIST_NAME%\esptool.exe
     - 7z a %PRODUCT_DIST_NAME%.zip %PRODUCT_DIST_NAME%
-
-artifacts:
-    - path: '*.zip'
+    - appveyor PushArtifact %PRODUCT_DIST_NAME%.zip
 
 deploy:
-    release: %PRODUCT_NAME%
+    release: $(PRODUCT_NAME)
     provider: GitHub
     auth_token:
         secure: 'PGg5fnoBpP1Omzr6f3KIYDiD8J30rretQjSl/MITRpzvSCmN88kM6VDMz1TBGZTA'
