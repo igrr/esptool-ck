@@ -24,7 +24,8 @@ build_script:
     - 7z a %PRODUCT_ZIP% %PRODUCT_DIST_NAME%
     - appveyor PushArtifact %PRODUCT_ZIP%
     - SET PRODUCT_ZIP_SHA=%PRODUCT_ZIP%.sha
-    - ps: Get-FileHash $env:PRODUCT_DIST_NAME | Out-File $env:PRODUCT_ZIP_SHA
+    - ps: Get-FileHash $env:PRODUCT_ZIP -Algorithm SHA1 | Out-File $env:PRODUCT_ZIP_SHA
+    - type %PRODUCT_ZIP_SHA%
     - appveyor PushArtifact %PRODUCT_ZIP_SHA%
 
 deploy:
