@@ -3,6 +3,9 @@ version: 0.0.{build}
 platform:
     - x86
 
+skip_commits:
+  message: /\[ci skip\]/
+
 matrix:
     fast_finish: true
 
@@ -17,8 +20,12 @@ build_script:
     - echo %PRODUCT_DIST_NAME%
     - mkdir %PRODUCT_DIST_NAME%
     - cp esptool.exe %PRODUCT_DIST_NAME%\esptool.exe
-    - 7z a %PRODUCT_DIST_NAME%.zip %PRODUCT_DIST_NAME%
-    - appveyor PushArtifact %PRODUCT_DIST_NAME%.zip
+    - SET PRODUCT_ZIP=%PRODUCT_DIST_NAME%.zip
+    - 7z a %PRODUCT_ZIP% %PRODUCT_DIST_NAME%
+    - appveyor PushArtifact %PRODUCT_ZIP%
+    - SET PRODUCT_ZIP_SHA=%PRODUCT_ZIP%.sha
+    - ps: Get-FileHash $env:PRODUCT_DIST_NAME | Out-File $env:PRODUCT_ZIP_SHA
+    - appveyor PushArtifact %PRODUCT_ZIP_SHA%
 
 deploy:
     release: $(PRODUCT_NAME)
