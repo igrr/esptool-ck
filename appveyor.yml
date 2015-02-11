@@ -26,7 +26,7 @@ deploy:
     release: %PRODUCT_NAME%
     provider: GitHub
     auth_token:
-        secure: PGg5fnoBpP1Omzr6f3KIYDiD8J30rretQjSl/MITRpzvSCmN88kM6VDMz1TBGZTA
+        secure: 'PGg5fnoBpP1Omzr6f3KIYDiD8J30rretQjSl/MITRpzvSCmN88kM6VDMz1TBGZTA'
     artifact: /.*\.zip/
     draft: true
     prerelease: false
