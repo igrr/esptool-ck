@@ -9,4 +9,20 @@ matrix:
 build_script:
     - SET PATH=C:\MinGW\bin;C:\MinGW\msys\1.0\bin;%PATH%
     - make all
- 
+    - SET PRODUCT_NAME=esptool-%APPVEYOR_REPO_TAG_NAME%
+    - if [%APPVEYOR_REPO_TAG_NAME%]==[] SET PRODUCT_NAME=esptool-%APPVEYOR_REPO_COMMIT%
+    - mkdir %PRODUCT_NAME%
+    - cp esptool.exe %PRODUCT_NAME%\esptool.exe
+    - zip -r %PRODUCT_NAME% %PRODUCT_NAME%
+
+deploy:
+    release: esptool-$(APPVEYOR_REPO_TAG_NAME)
+    provider: GitHub
+    auth_token:
+        secure: PGg5fnoBpP1Omzr6f3KIYDiD8J30rretQjSl/MITRpzvSCmN88kM6VDMz1TBGZTA
+    artifact: /.*\.zip/
+    draft: true
+    prerelease: false
+    on:
+        branch: master
+        appveyor_repo_tag: false
