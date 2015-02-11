@@ -11,9 +11,11 @@ build_script:
     - make all
     - SET PRODUCT_NAME=esptool-%APPVEYOR_REPO_TAG_NAME%
     - if [%APPVEYOR_REPO_TAG_NAME%]==[] SET PRODUCT_NAME=esptool-%APPVEYOR_REPO_COMMIT%
+    - echo %PRODUCT_NAME%
     - mkdir %PRODUCT_NAME%
     - cp esptool.exe %PRODUCT_NAME%\esptool.exe
-    - zip -r %PRODUCT_NAME% %PRODUCT_NAME%
+    - 7z a %PRODUCT_NAME%.zip %PRODUCT_NAME%
+
 
 deploy:
     release: esptool-$(APPVEYOR_REPO_TAG_NAME)
