@@ -21,8 +21,8 @@ Argument | Description
 ```-eo <filename>``` | Opens an ELF object file, parses it and caches some of the information found therein. Only works if there is no ELF file currently opened.
 ```-es <section> <filename>``` | Reads the given section from the ELF file and makes a raw dump into the specified file.
 ```-ec``` | Closes the currently opened ELF file
-```-bo <filename> ```| Prepares an firmware file in the format that is understood by the ESP chip. Only works if an ELF file is opened, and if no firmware file is prepared yet. The result of the operations done on the firmware image are saved when the it is finally closed using -bc command.
-```-bs <section>``` | Reads the specified section from the ELF file and appends it to the firmware image.
+```-bo <filename> ```| Prepares an firmware file in the format that is understood by the ESP chip. Only works if an ELF file is opened, and if no firmware file is prepared yet. Upon -bo the tool will start out with an empty image where only the main header is set up. The result of the operations done on the firmware image are saved when the it is finally closed using -bc command.
+```-bs <section>``` | Reads the specified section from the ELF file and appends it to the firmware image. Sections will appear in the firmware image in the exact same order as the -bs commands are executed.
 ```-bc``` | Closes the firmware image and saves the result as file to disk.
 ```-v``` | Increase verbosity level of the tool. Add more v's to increase it even more, e.g. -vv, -vvv.
 ```-q``` | Disable most of the output.
@@ -30,17 +30,7 @@ Argument | Description
 ```-cd <board>``` | Select the reset method to use for resetting the board. Currently supported methods are listed below.
 ```-cb <baudrate>``` | Select the baudrate to use, default is 115200.
 ```-ca <address>``` | Address in flash memory to upload the data to. This address is interpreted as hexadecimal. Default is 0x00000000.
-```-cf <filename>``` | Upload the file to flash
-
-Upon -bo the tool will start out with an empty image where only
-the main header is set accordingly. Sections appear in the
-firmware image in the exact same order as the -bs commands
-are executed.
-
-Parameters are executed in the order they appear. That means
-that if, for example, you want a different port or baudrate
-for the flash-upload, those parameters must appear before
-the -cf parameter.
+```-cf <filename>``` | Upload the file to flash. Parameters that set the port, baud rate, and address must preceed the -cf command.
 
 Supported boards
 ----------------
@@ -51,7 +41,7 @@ none       | No DTR/RTS manipulation
 ck         | RTS controls RESET or CH_PD, DTR controls GPIO0
 wifio      | TXD controls GPIO0 via PNP transistor and DTR controls RESET via a capacitor
 
-Support for NodeMCU board is comming up.
+Support for NodeMCU board is coming up.
 
 Examples
 --------
