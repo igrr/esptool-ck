@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <termios.h>
 #endif
@@ -47,7 +48,7 @@ static COMMTIMEOUTS sTIMEOUTS;
 #else
 static int serial_port = -1;
 static struct termios term;
-static unsigned int old_timeout;
+static unsigned int timeout;
 #endif
 
 
@@ -283,29 +284,44 @@ void serialport_set_baudrate(unsigned int baudrate)
     }
 }
 
-void serialport_set_timeout(unsigned int timeout)
+void serialport_set_character_timeout_0_1s(unsigned int t)
 {
-    if(timeout != old_timeout)
-    {
-        term.c_cc[VMIN]  = 0;
-        term.c_cc[VTIME] = timeout;
+    if (t > 255)
+        t = 255;
 
-        LOGDEBUG("setting timeout %i", timeout);
-        
-        if (tcsetattr(serial_port, TCSANOW, &term)!=0)
-        {
-            LOGDEBUG("set timeout failed");
-        }
-        
-        LOGDEBUG("done");
-        
-        old_timeout = timeout;
+    term.c_cc[VMIN]  = 0;
+    term.c_cc[VTIME] = t;  // VTIME is measured in 0.1s
+
+    LOGDEBUG("setting character timeout %i", t);
+    
+    if (tcsetattr(serial_port, TCSANOW, &term)!=0)
+    {
+        LOGDEBUG("set timeout failed");
+    }
+    
+    LOGDEBUG("done");
+    timeout = t;
+}
+
+unsigned serialport_get_character_timeout_0_1s()
+{
+    return term.c_cc[VTIME];
+}
+
+
+void serialport_set_timeout(unsigned int t)
+{
+    if(t != timeout)
+    {
+        LOGDEBUG("setting timeout %i", t);
+        serialport_set_character_timeout_0_1s((t + 99)/100);
+        timeout = t;
     }
 }
 
 unsigned serialport_get_timeout()
 {
-    return old_timeout;
+    return timeout;
 }
 
 
@@ -353,7 +369,7 @@ int serialport_open(const char *device, unsigned int baudrate)
     
     term.c_cc[VMIN]=0;
     term.c_cc[VTIME]=1;
-    old_timeout = 1;
+    timeout = 100;
     
     
     
@@ -384,7 +400,18 @@ int serialport_open(const char *device, unsigned int baudrate)
 
 unsigned serialport_read(unsigned char* data, unsigned int size)
 {
-	return read(serial_port, data, size);
+    struct timeval tv0, tv1;
+    gettimeofday(&tv0, NULL);
+    unsigned n = 0;
+    unsigned time_spent = 0;
+    do
+    {
+        unsigned cb = read(serial_port, data + n, size - n);
+        n += cb;
+        gettimeofday(&tv1, NULL);
+        time_spent = (tv1.tv_sec - tv0.tv_sec) * 1000 + tv1.tv_usec / 1000 - tv0.tv_usec / 1000;
+    } while (n < size && time_spent < timeout);
+    return n;
 }
 
 unsigned serialport_write(const unsigned char* data, unsigned int size)
@@ -399,15 +426,13 @@ void serialport_flush(void)
     
     if(serial_port)
     {
-        t = term.c_cc[VTIME];
-        
-        serialport_set_timeout(1);
+        t = serialport_get_character_timeout_0_1s();
+        serialport_set_character_timeout_0_1s(0);
         
         tcdrain(serial_port);
-        
-        while(serialport_read(&b, 1) > 0) { tcflush(serial_port, TCIOFLUSH); };
+        while(read(serial_port, &b, 1) > 0);
        
-        serialport_set_timeout(t);
+        serialport_set_character_timeout_0_1s(t);
     }
 }
 
