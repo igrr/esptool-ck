@@ -82,25 +82,9 @@ void board_ck_ra()
     serialport_set_rts(0);
 }
 
-// WIFIO board: dtr controls gpio0 via a pnp, and rst via a capacitor
-
-void board_wifio_rb()
-{
-    serialport_set_dtr(0);
-    espcomm_delay_ms(30);
-    serialport_set_dtr(1);
-}
-
-void board_wifio_ra()
-{
-    serialport_set_dtr(0);
-    espcomm_delay_ms(5);
-    serialport_set_dtr(1);
-}
-
 // WIFIO board, rev 2: TXD controls gpio0 via a pnp, and DTR controls rst via a capacitor
 
-void board_wifio2_rb()
+void board_wifio_rb()
 {
     serialport_set_dtr(0);
     espcomm_delay_ms(5);
@@ -110,7 +94,7 @@ void board_wifio2_rb()
     serialport_send_break();
 }
 
-void board_wifio2_ra()
+void board_wifio_ra()
 {
     serialport_set_dtr(0);
     espcomm_delay_ms(5);
@@ -124,8 +108,7 @@ void board_wifio2_ra()
 static espcomm_board_t s_boards[] = {
     { "none",   0,                  0               },
     { "ck",     &board_ck_rb,       &board_ck_ra    },
-    { "wifio",  &board_wifio_rb,    &board_wifio_ra },
-    { "wifio2", &board_wifio2_rb,   &board_wifio2_ra},
+    { "wifio",  &board_wifio_rb,    &board_wifio_ra},
 };
 
 static size_t s_boards_count = sizeof(s_boards) / sizeof(espcomm_board_t);
