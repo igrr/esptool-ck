@@ -36,20 +36,6 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <termios.h>
-
-#ifndef CBR_230400
-#define CBR_230400 230400
-#endif
-#ifndef CBR_460800
-#define CBR_460800 460800
-#endif
-#ifndef CBR_512000
-#define CBR_512000 512000
-#endif
-#ifndef CBR_921600
-#define CBR_921600 921600
-#endif
-
 #endif
 
 #include "serialport.h"
@@ -67,6 +53,21 @@ static unsigned int timeout;
 
 
 #ifdef _WIN32
+
+#ifndef CBR_230400
+#define CBR_230400 230400
+#endif
+#ifndef CBR_460800
+#define CBR_460800 460800
+#endif
+#ifndef CBR_512000
+#define CBR_512000 512000
+#endif
+#ifndef CBR_921600
+#define CBR_921600 921600
+#endif
+
+
 void serialport_setbaudrate(unsigned int baudrate)
 {
 	DWORD br = 0;
