@@ -53,6 +53,21 @@ static unsigned int timeout;
 
 
 #ifdef _WIN32
+
+#ifndef CBR_230400
+#define CBR_230400 230400
+#endif
+#ifndef CBR_460800
+#define CBR_460800 460800
+#endif
+#ifndef CBR_512000
+#define CBR_512000 512000
+#endif
+#ifndef CBR_921600
+#define CBR_921600 921600
+#endif
+
+
 void serialport_setbaudrate(unsigned int baudrate)
 {
 	DWORD br = 0;
@@ -66,7 +81,11 @@ void serialport_setbaudrate(unsigned int baudrate)
 		case 57600: 	br = CBR_57600; 	break;
 		case 115200: 	br = CBR_115200; 	break;
 		case 128000: 	br = CBR_128000; 	break;
+        case 230400:    br = CBR_230400;    break;
 		case 256000:	br = CBR_256000;	break;
+        case 512000:    br = CBR_512000;    break;
+        case 460800:    br = CBR_460800;    break;
+        case 921600:    br = CBR_921600;    break;
 	}
 	if (br == 0)
 	{
