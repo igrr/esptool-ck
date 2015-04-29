@@ -277,12 +277,39 @@ void espcomm_close(void)
 
 int espcomm_start_flash(uint32_t size, uint32_t address)
 {
-    const int delay_per_erase_block_ms = 50;
-    const int erase_block_size = 4096;
-
     uint32_t res;
+
+    LOGDEBUG("size: %06x address: %06x", size, address);
+
+    const int sector_size = 4096;
+    const int sectors_per_block  = 16;
+    const int first_sector_index = address / sector_size;
+    LOGDEBUG("first_sector_index: %d", first_sector_index);
+
+    const int total_sector_count = ((size % sector_size) == 0) ? 
+                                    (size / sector_size) : (size / sector_size + 1);
+    LOGDEBUG("total_sector_count: %d", total_sector_count);
+
+    const int max_head_sector_count  = sectors_per_block - (first_sector_index % sectors_per_block);
+    const int head_sector_count = (max_head_sector_count > total_sector_count) ? 
+                                    total_sector_count : max_head_sector_count;
+    LOGDEBUG("head_sector_count: %d", head_sector_count);
+
+    // SPIEraseArea function in the esp8266 ROM has a bug which causes extra area to be erased.
+    // If the address range to be erased crosses the block boundary,
+    // then extra head_sector_count sectors are erased.
+    // If the address range doesn't cross the block boundary,
+    // then extra total_sector_count sectors are erased.
+
+    const int adjusted_sector_count = (total_sector_count > 2 * head_sector_count) ?
+                                      (total_sector_count - head_sector_count):
+                                      (total_sector_count + 1) / 2;
+    LOGDEBUG("adjusted_sector_count: %d", adjusted_sector_count);
+
+    const int adjusted_size = adjusted_sector_count * sector_size;
+    LOGDEBUG("adjusted_size: %06x", adjusted_size);
     
-    flash_packet[0] = size;
+    flash_packet[0] = adjusted_size;
     flash_packet[1] = 0x00000200;
     flash_packet[2] = BLOCKSIZE_FLASH;
     flash_packet[3] = address;
@@ -290,7 +317,7 @@ int espcomm_start_flash(uint32_t size, uint32_t address)
     send_packet.checksum = espcomm_calc_checksum((unsigned char*) flash_packet, 16);
 
     // int timeout_ms = size / erase_block_size * delay_per_erase_block_ms + 250;
-    int timeout_ms = 5000;
+    int timeout_ms = 10000;
     // LOGDEBUG("calculated erase delay: %dms", timeout_ms);
     res = espcomm_send_command(FLASH_DOWNLOAD_BEGIN, (unsigned char*) &flash_packet, 16, timeout_ms);
     return res;
