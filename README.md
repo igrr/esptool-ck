@@ -22,6 +22,9 @@ Argument | Description
 ```-es <section> <filename>``` | Reads the given section from the ELF file and makes a raw dump into the specified file.
 ```-ec``` | Closes the currently opened ELF file
 ```-bo <filename> ```| Prepares an firmware file in the format that is understood by the ESP chip. Only works if an ELF file is opened, and if no firmware file is prepared yet. Upon -bo the tool will start out with an empty image where only the main header is set up. The result of the operations done on the firmware image are saved when the it is finally closed using -bc command.
+```-bm <qio|qout|dio|dout>``` | Set the flash chip interface mode. Default is QIO. This parameter is stored in the binary image header, along with the flash size and flash frequency. The ROM bootloader in the ESP8266 uses the value of these parameters in order to know how to talk to the flash chip.
+```-bz <512K|256K|1M|2M|4M>``` | Set the flash chip size. Default is 512K.
+```-bf <40|26|20|80>``` | Set the flash chip frequency, in MHz. Default is 40M.
 ```-bs <section>``` | Reads the specified section from the ELF file and appends it to the firmware image. Sections will appear in the firmware image in the exact same order as the -bs commands are executed.
 ```-bc``` | Closes the firmware image and saves the result as file to disk.
 ```-v``` | Increase verbosity level of the tool. Add more v's to increase it even more, e.g. -vv, -vvv.

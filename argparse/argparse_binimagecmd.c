@@ -104,6 +104,39 @@ int argparse_binimagecmd(int num_args, char **arg_ptr)
                     return 1;
                 }
                 break;
+
+            case 'm':
+                if (num_args < 1)
+                {
+                    return 0;
+                }
+                if (binimage_set_flash_mode(arg_ptr[0]) == 0)
+                {
+                    return 0;
+                }
+                return 2;
+
+            case 'z':
+                if (num_args < 1)
+                {
+                    return 0;
+                }
+                if (binimage_set_flash_size(arg_ptr[0]) == 0)
+                {
+                    return 0;
+                }
+                return 2;
+
+            case 'f':
+                if (num_args < 1)
+                {
+                    return 0;
+                }
+                if (binimage_set_flash_freq(arg_ptr[0]) == 0)
+                {
+                    return 0;
+                }
+                return 2;
                 
             default:
                 return 0;

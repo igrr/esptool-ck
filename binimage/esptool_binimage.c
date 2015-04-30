@@ -82,8 +82,8 @@ int binimage_prepare(const char *fname, uint32_t entry)
     
     b_image.magic = 0xE9;
     b_image.num_segments = 0;
-    b_image.dummy[0] = 0x00;
-    b_image.dummy[1] = 0x00;
+    b_image.flash_mode = FLASH_MODE_QIO;
+    b_image.flash_size_freq = FLASH_SIZE_512K | FLASH_FREQ_40;
     b_image.entry = entry;
     
     
@@ -117,7 +117,7 @@ void bimage_set_entry(uint32_t entry)
 int binimage_write_close(uint32_t padsize)
 {
     unsigned int cnt, cnt2, total_size;
-    unsigned  char chksum;
+    unsigned char chksum;
     
     chksum = 0xEF;
     
@@ -208,5 +208,136 @@ int binimage_write_close(uint32_t padsize)
     }
 
     return 1;
+}
+
+#define INVALID_VAL 0xff
+
+unsigned char binimage_parse_flash_mode(const char* str);
+unsigned char binimage_parse_flash_size(const char* str);
+unsigned char binimage_parse_flash_freq(const char* str);
+
+const char* binimage_flash_mode_to_str(unsigned char mode);
+const char* binimage_flash_size_to_str(unsigned char size);
+const char* binimage_flash_freq_to_str(unsigned char freq);
+
+
+int binimage_set_flash_mode(const char* modestr)
+{
+    unsigned char mode = binimage_parse_flash_mode(modestr);
+    if (mode == INVALID_VAL)
+    {
+        LOGERR("invalid flash mode value: %s", modestr);
+        return 0;
+    }
+
+    LOGINFO("setting flash mode from %s to %s", 
+            binimage_flash_mode_to_str(b_image.flash_mode),
+            binimage_flash_mode_to_str(mode));
+
+    b_image.flash_mode = mode;
+    return 1;
+}
+
+int binimage_set_flash_size(const char* sizestr)
+{
+    unsigned char size = binimage_parse_flash_size(sizestr);
+    if (size == INVALID_VAL)
+    {
+        LOGERR("invalid flash size value: %s", sizestr);
+        return 0;
+    }
+
+    LOGINFO("setting flash size from %s to %s", 
+            binimage_flash_size_to_str(b_image.flash_size_freq & 0xf0),
+            binimage_flash_size_to_str(size));
+    
+    b_image.flash_size_freq = size | (b_image.flash_size_freq & 0x0f);
+    return 1;
+}
+
+int binimage_set_flash_freq(const char* freqstr)
+{
+    unsigned char freq = binimage_parse_flash_freq(freqstr);
+    if (freq == INVALID_VAL)
+    {
+        LOGERR("invalid flash frequency value: %s", freqstr);
+        return 0;
+    }
+
+    LOGINFO("setting flash frequency from %s to %s", 
+            binimage_flash_freq_to_str(b_image.flash_size_freq & 0x0f),
+            binimage_flash_freq_to_str(freq));
+    
+    b_image.flash_size_freq = (b_image.flash_size_freq & 0xf0) | freq;
+    return 1;
+}
+
+static const char* flash_mode_str[] = {"qio", "qout", "dio", "dout"};
+static const char* flash_size_str[] = {"512K", "256K", "1M", "2M", "4M"};
+
+unsigned char binimage_parse_flash_mode(const char* str)
+{
+    const int n = sizeof(flash_mode_str)/sizeof(const char*);
+    for (int i = 0; i < n; ++i) 
+    {
+        if (strcasecmp(str, flash_mode_str[i]) == 0) 
+        {
+            return (unsigned char) i;
+        }
+    }
+    return INVALID_VAL;
+}
+
+unsigned char binimage_parse_flash_size(const char* str)
+{
+    const int n = sizeof(flash_size_str)/sizeof(const char*);
+    for (int i = 0; i < n; ++i) 
+    {
+        if (strcasecmp(str, flash_size_str[i]) == 0) 
+        {
+            return (unsigned char) i << 4;
+        }
+    }
+    return INVALID_VAL;
+}
+
+unsigned char binimage_parse_flash_freq(const char* str)
+{
+    int val = atoi(str);
+    switch (val) 
+    {
+        case 40: return FLASH_FREQ_40;
+        case 26: return FLASH_FREQ_26;
+        case 20: return FLASH_FREQ_20;
+        case 80: return FLASH_FREQ_80;
+        default: return INVALID_VAL;
+    }
+}
+
+const char* binimage_flash_mode_to_str(unsigned char mode)
+{
+    if (mode > FLASH_MODE_DOUT)
+        return "";
+
+    return flash_mode_str[mode];
+}
+
+const char* binimage_flash_size_to_str(unsigned char size)
+{
+    if ((size >> 4) > FLASH_SIZE_4M)
+        return "";
+    return flash_size_str[size >> 4];
+}
+
+const char* binimage_flash_freq_to_str(unsigned char freq)
+{
+    switch (freq)
+    {
+        case FLASH_FREQ_40: return "40";
+        case FLASH_FREQ_26: return "26";
+        case FLASH_FREQ_20: return "20";
+        case FLASH_FREQ_80: return "80";
+        default: return "";
+    }
 }
 
