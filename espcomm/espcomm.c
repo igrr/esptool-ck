@@ -100,34 +100,36 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
     uint32_t cnt;
 
     result = 0;
-    
-    send_packet.direction = 0x00;
-    send_packet.command = command;
-    send_packet.size = data_size;
-    
-    serialport_send_C0();
-
-    if (!upload_stage)
-        LOGDEBUG("espcomm_cmd: sending command header");
-    else
-        LOGVERBOSE("espcomm_cmd: sending command header");
-
-    serialport_send_slip((unsigned char*) &send_packet, 8);
-    
-    if(data_size)
+    if (command != NO_COMMAND)
     {
+        send_packet.direction = 0x00;
+        send_packet.command = command;
+        send_packet.size = data_size;
+        
+        serialport_send_C0();
+
         if (!upload_stage)
-            LOGDEBUG("espcomm_cmd: sending command payload");
+            LOGDEBUG("espcomm_send_command: sending command header");
         else
-            LOGVERBOSE("espcomm_cmd: sending command payload");
-        serialport_send_slip(data, data_size);
+            LOGVERBOSE("espcomm_send_command: sending command header");
+
+        serialport_send_slip((unsigned char*) &send_packet, 8);
+        
+        if(data_size)
+        {
+            if (!upload_stage)
+                LOGDEBUG("espcomm_send_command: sending command payload");
+            else
+                LOGVERBOSE("espcomm_send_command: sending command payload");
+            serialport_send_slip(data, data_size);
+        }
+        else
+        {
+            LOGDEBUG("espcomm_send_command: no payload");
+        }
+        
+        serialport_send_C0();
     }
-    else
-    {
-        LOGDEBUG("espcomm_cmd: no payload");
-    }
-    
-    serialport_send_C0();
 
     serialport_drain();
 
@@ -148,9 +150,9 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
             if(receive_packet.size)
             {
                 if (!upload_stage)
-                    LOGDEBUG("espcomm cmd: receiving %i bytes of data", receive_packet.size);
+                    LOGDEBUG("espcomm_send_command: receiving %i bytes of data", receive_packet.size);
                 else
-                    LOGVERBOSE("espcomm cmd: receiving %i bytes of data", receive_packet.size);
+                    LOGVERBOSE("espcomm_send_command: receiving %i bytes of data", receive_packet.size);
 
                 if(receive_packet.data)
                 {
@@ -162,12 +164,12 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
                 
                 if(serialport_receive_slip(receive_packet.data, receive_packet.size) == 0)
                 {
-                    LOGWARN("espcomm_cmd: cant receive slip payload data");
+                    LOGWARN("espcomm_send_command: cant receive slip payload data");
                     return 0;
                 }
                 else
                 {
-                    LOGVERBOSE("espcomm_cmd: received %x bytes: ", receive_packet.size);
+                    LOGVERBOSE("espcomm_send_command: received %x bytes: ", receive_packet.size);
                     for(cnt = 0; cnt < receive_packet.size; cnt++)
                     {
                         LOGVERBOSE("0x%02X ", receive_packet.data[cnt]);
@@ -178,13 +180,13 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
             if(serialport_receive_C0())
             {
                 if(receive_packet.direction == 0x01 &&
-                    receive_packet.command == command)
+                    (command == NO_COMMAND || receive_packet.command == command))
                 {
                     result = receive_packet.response;
                 }
                 else
                 {
-                    LOGWARN("espcomm cmd: wrong direction/command: 0x%02X 0x%02X, expected 0x%02X 0x%02X", 
+                    LOGWARN("espcomm_send_command: wrong direction/command: 0x%02X 0x%02X, expected 0x%02X 0x%02X", 
 						receive_packet.direction, receive_packet.command, 1, command);
 					return 0;
                 }
@@ -192,15 +194,15 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
             else
             {
                 if (!sync_stage)
-                    LOGWARN("espcomm cmd: no final C0");
+                    LOGWARN("espcomm_send_command: no final C0");
                 else
-                    LOGVERBOSE("espcomm cmd: no final C0");
+                    LOGVERBOSE("espcomm_send_command: no final C0");
 				return 0;
             }
         }
         else
         {
-            LOGWARN("espcomm cmd: can't receive command response header");
+            LOGWARN("espcomm_send_command: can't receive command response header");
 			return 0;
         }
     }
@@ -210,13 +212,13 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
             serialport_set_timeout(old_timeout);
 
         if (!sync_stage)
-            LOGWARN("espcomm cmd: didn't receive command response");
+            LOGWARN("espcomm_send_command: didn't receive command response");
         else
-            LOGVERBOSE("espcomm cmd: didn't receive command response");
+            LOGVERBOSE("espcomm_send_command: didn't receive command response");
 		return 0;
     }
     
-    LOGVERBOSE("espcomm cmd: response 0x%08X", result);
+    LOGVERBOSE("espcomm_send_command: response 0x%08X", result);
     return result;
 }
 
@@ -228,22 +230,30 @@ static int espcomm_sync(void)
     {
         LOGINFO("resetting board");
         espcomm_enter_boot();
-		espcomm_delay_ms(45);
         for (int retry_sync = 0; retry_sync < 3; ++retry_sync)
         {
             LOGINFO("trying to connect");
+            espcomm_delay_ms(100);
             serialport_flush();
 
             send_packet.checksum = espcomm_calc_checksum((unsigned char*)&sync_frame, 36);
             if(espcomm_send_command(SYNC_FRAME, (unsigned char*) &sync_frame, 36, 0) == 0x20120707)
             {
-				espcomm_delay_ms(10);
-                serialport_flush();
-                sync_stage = false;
-                return 1;
+                bool error = false;
+				for (int i = 0; i < 7; ++i)
+                {
+                    if (espcomm_send_command(NO_COMMAND, 0, 0, 0) != 0x20120707)
+                    {
+                        error = true;
+                        break;
+                    }
+                }
+                if (!error)
+                {
+                    sync_stage = false;
+                    return 1;
+                }
             }
-			
-			espcomm_delay_ms(10);
         }
     }
     sync_stage = false;

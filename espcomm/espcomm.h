@@ -37,7 +37,8 @@ enum
     RAM_DOWNLOAD_DATA           = 0x07,
     SYNC_FRAME                  = 0x08,
     WRITE_REGISTER              = 0x09,
-    READ_REGISTER               = 0x0A
+    READ_REGISTER               = 0x0A,
+    NO_COMMAND                  = 0xFF
 };
 
 
