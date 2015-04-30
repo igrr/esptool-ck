@@ -299,6 +299,9 @@ void serialport_set_baudrate(unsigned int baudrate)
             break;
 #endif
         default:
+            LOGWARN("serialport_set_baudrate: baud rate %d may not work", baudrate);
+            cfsetispeed(&term,baudrate);
+            cfsetospeed(&term,baudrate);
             break;
     }
 }
