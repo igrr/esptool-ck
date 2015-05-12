@@ -131,6 +131,7 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
         serialport_send_C0();
     }
 
+    espcomm_delay_ms(5);
     serialport_drain();
 
     int old_timeout = 0;
