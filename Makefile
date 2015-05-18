@@ -6,7 +6,8 @@ SDK_INCLUDES=
 ifeq ($(OS),Windows_NT)
     TARGET_OS := WINDOWS
     DIST_SUFFIX := windows
-    ZIP_CMD := 7z a
+    ARCHIVE_CMD := 7z a
+    ARCHIVE_EXTENSION := zip
 else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
@@ -23,7 +24,8 @@ else
         TARGET_OS := OSX
         DIST_SUFFIX := osx
     endif
-    ZIP_CMD := zip -r
+    ARCHIVE_CMD := tar czf
+    ARCHIVE_EXTENSION := tar.gz
 endif
 
 VERSION ?= $(shell git describe --always)
@@ -44,7 +46,7 @@ CCOPTS := $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) -D$(TARGET_OS) -DVERSION=\"$(VER
 
 DIST_NAME := esptool-$(VERSION)-$(DIST_SUFFIX)
 DIST_DIR := $(DIST_NAME)
-DIST_ZIP := $(DIST_NAME).zip
+DIST_ARCHIVE := $(DIST_NAME).$(ARCHIVE_EXTENSION)
 
 vpath %.c $(SRC_DIR)
 
@@ -59,7 +61,7 @@ all: checkdirs $(TARGET)
 
 dist: checkdirs $(TARGET) $(DIST_DIR)
 	cp $(TARGET) $(DIST_DIR)/
-	$(ZIP_CMD) $(DIST_ZIP) $(DIST_DIR)
+	$(ARCHIVE_CMD) $(DIST_ARCHIVE) $(DIST_DIR)
 
 $(TARGET): $(OBJ) main.c
 	gcc $(SDK_LIBDIR) $(SDK_LIBS) $(CCOPTS) $^ -o $@
