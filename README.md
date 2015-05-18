@@ -51,8 +51,9 @@ Examples
 
 ##### Create firmware files from the ELF output
 Input: ```app.elf```, output: ```app_00000.bin```, ```app_40000.bin```.
+Note the option for 4M flash size.
 ```
-esptool -eo app.elf -bo 00000.bin -bs .text -bs .data -bs .rodata -bc -ec -eo app.elf -es .irom0.text 40000.bin -ec
+esptool -bz 4M -eo app.elf -bo app_00000.bin -bs .text -bs .data -bs .rodata -bc -ec -eo app.elf -es .irom0.text app_40000.bin -ec
 ```
 
 ##### Upload the firmware to the board connected to COM5 port at 115200 baud, using manual reset method.
