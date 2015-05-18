@@ -273,7 +273,7 @@ int binimage_set_flash_freq(const char* freqstr)
 }
 
 static const char* flash_mode_str[] = {"qio", "qout", "dio", "dout"};
-static const char* flash_size_str[] = {"512K", "256K", "1M", "2M", "4M"};
+static const char* flash_size_str[] = {"512K", "256K", "1M", "2M", "4M", "8M", "16M", "32M"};
 
 unsigned char binimage_parse_flash_mode(const char* str)
 {
@@ -324,7 +324,7 @@ const char* binimage_flash_mode_to_str(unsigned char mode)
 
 const char* binimage_flash_size_to_str(unsigned char size)
 {
-    if ((size >> 4) > FLASH_SIZE_4M)
+    if ((size >> 4) > FLASH_SIZE_32M)
         return "";
     return flash_size_str[size >> 4];
 }
