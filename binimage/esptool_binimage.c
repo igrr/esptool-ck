@@ -29,7 +29,12 @@
 #include "infohelper.h"
 #include "esptool_binimage.h"
 
-static bin_image b_image;
+static bin_image b_image = {
+ .magic             = 0xe9,
+ .num_segments      = 0,
+ .flash_mode        = FLASH_MODE_QIO,
+ .flash_size_freq   = FLASH_SIZE_512K | FLASH_FREQ_40
+};
 
 int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
 {
@@ -80,12 +85,7 @@ int binimage_prepare(const char *fname, uint32_t entry)
         return 0;
     }
     
-    b_image.magic = 0xE9;
-    b_image.num_segments = 0;
-    b_image.flash_mode = FLASH_MODE_QIO;
-    b_image.flash_size_freq = FLASH_SIZE_512K | FLASH_FREQ_40;
-    b_image.entry = entry;
-    
+    b_image.entry = entry;    
     
     if(fname[0])
     {
