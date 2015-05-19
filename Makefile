@@ -13,12 +13,16 @@ else
     ifeq ($(UNAME_S),Linux)
         TARGET_OS := LINUX
         UNAME_P := $(shell uname -p)
+        UNAME_M := $(shell uname -m)
 	    ifeq ($(UNAME_P),x86_64)
 	        DIST_SUFFIX := linux64
 	    endif
 	    ifneq ($(filter %86,$(UNAME_P)),)
 	        DIST_SUFFIX := linux32
 	    endif
+        ifeq ($(UNAME_M),armv6l)
+            DIST_SUFFIX := linux-armhf
+        endif
     endif
     ifeq ($(UNAME_S),Darwin)
         TARGET_OS := OSX
