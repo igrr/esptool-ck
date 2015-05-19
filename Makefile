@@ -14,10 +14,10 @@ else
         TARGET_OS := LINUX
         UNAME_P := $(shell uname -p)
         UNAME_M := $(shell uname -m)
-	    ifeq ($(UNAME_P),x86_64)
+	    ifeq ($(UNAME_M),x86_64)
 	        DIST_SUFFIX := linux64
 	    endif
-	    ifneq ($(filter %86,$(UNAME_P)),)
+	    ifeq ($(UNAME_M),i686)
 	        DIST_SUFFIX := linux32
 	    endif
         ifeq ($(UNAME_M),armv6l)
