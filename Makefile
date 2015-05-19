@@ -12,7 +12,6 @@ else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
         TARGET_OS := LINUX
-        UNAME_P := $(shell uname -p)
         UNAME_M := $(shell uname -m)
 	    ifeq ($(UNAME_M),x86_64)
 	        DIST_SUFFIX := linux64
