@@ -1,7 +1,6 @@
 CFLAGS		= -std=gnu99 -Os -Wall
-SDK_LIBDIR	=
-SDK_LIBS	=
-SDK_INCLUDES=
+CXXFLAGS	= -std=c++11 -Os -Wall
+
 
 ifeq ($(OS),Windows_NT)
     TARGET_OS := WINDOWS
@@ -36,41 +35,44 @@ VERSION ?= $(shell git describe --always)
 MODULES		:= infohelper elf binimage argparse serialport espcomm
 
 -include local/Makefile.local.$(TARGET_OS)
-SRC_DIR		:= $(MODULES)
-BUILD_DIR	:= $(addprefix build/,$(MODULES))
 
-SRC		:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
-OBJ		:= $(patsubst %.c,build/%.o,$(SRC))
-INCLUDES	:= $(addprefix -I,$(SRC_DIR))
+OBJECTS		:= \
+	argparse/argparse.o \
+	argparse/argparse_binimagecmd.o \
+	argparse/argparse_commcmd.o \
+	argparse/argparse_elfcmd.o \
+	binimage/esptool_binimage.o \
+	elf/esptool_elf.o \
+	elf/esptool_elf_object.o \
+	espcomm/delay.o \
+	espcomm/espcomm.o \
+	espcomm/espcomm_boards.o \
+	infohelper/infohelper.o \
+	serialport/serialport.o \
+	main.o
+
+INCLUDES	:= $(addprefix -I,$(MODULES))
 
 CFLAGS += $(TARGET_CFLAGS)
-
-CCOPTS := $(INCLUDES) $(SDK_INCLUDES) $(CFLAGS) -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" 
+CXXFLAGS += $(TARGET_CXXFLAGS)
+CPPFLAGS += $(INCLUDES) $(SDK_INCLUDES) -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" 
 
 DIST_NAME := esptool-$(VERSION)-$(DIST_SUFFIX)
 DIST_DIR := $(DIST_NAME)
 DIST_ARCHIVE := $(DIST_NAME).$(ARCHIVE_EXTENSION)
 
-vpath %.c $(SRC_DIR)
-
-define make-goal
-$1/%.o: %.c
-	$(CC) $(CCOPTS)-c $$< -o $$@
-endef
 
 .PHONY: all checkdirs clean dist
 
-all: checkdirs $(TARGET)
+all: $(TARGET)
 
-dist: checkdirs $(TARGET) $(DIST_DIR)
+dist: $(TARGET) $(DIST_DIR)
 	cp $(TARGET) $(DIST_DIR)/
 	$(ARCHIVE_CMD) $(DIST_ARCHIVE) $(DIST_DIR)
 
-$(TARGET): $(OBJ) main.c
-	gcc $(SDK_LIBDIR) $(SDK_LIBS) $(CCOPTS) $^ -o $@
+$(TARGET): $(OBJECTS)
+	gcc $^ -o $@
 	strip $(TARGET)
-
-checkdirs: $(BUILD_DIR)
 
 $(BUILD_DIR):
 	@mkdir -p $@
@@ -79,8 +81,7 @@ $(DIST_DIR):
 	@mkdir -p $@
 
 clean:
-	@rm -rf $(BUILD_DIR)
+	@rm -f $(OBJECTS)
 	@rm -f $(TARGET)
 	@rm -rf esptool-*
 
-$(foreach bdir,$(BUILD_DIR),$(eval $(call make-goal,$(bdir))))
