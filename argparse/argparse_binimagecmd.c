@@ -95,6 +95,7 @@ int argparse_binimagecmd(int num_args, char **arg_ptr)
                 }
                 if(argparse_binimagecmd_add_segment(arg_ptr[0], 4))
                 {
+                    bimage_set_entry(get_elf_entry());
                     return 2;
                 }
                 break;
