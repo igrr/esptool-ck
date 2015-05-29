@@ -24,6 +24,7 @@
  
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include "infohelper.h"
 #include "esptool_elf.h"
 #include "esptool_elf_object.h"
@@ -68,7 +69,7 @@ static int argparse_binimagecmd_add_segment(const char *sname, uint32_t padsize)
 int argparse_binimagecmd(int num_args, char **arg_ptr)
 {
     char *cur_cmd;
-    
+    uint32_t addr;
     if(arg_ptr[0][1] == 'b' && num_args--)
     {
         cur_cmd = &arg_ptr[0][2];
@@ -102,6 +103,18 @@ int argparse_binimagecmd(int num_args, char **arg_ptr)
                 if(binimage_write_close(16))
                 {
                     return 1;
+                }
+                break;
+
+            case 'p':
+                if(num_args < 1)
+                {
+                    return 0;
+                }
+                addr = (unsigned) atoi(arg_ptr[0]);
+                if(binimage_write_padto(16, addr))
+                {
+                    return 2;
                 }
                 break;
 

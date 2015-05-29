@@ -36,6 +36,8 @@ static bin_image b_image = {
  .flash_size_freq   = FLASH_SIZE_512K | FLASH_FREQ_40
 };
 
+unsigned int total_size = 0;
+
 int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
 {
     if(!data)
@@ -102,6 +104,8 @@ int binimage_prepare(const char *fname, uint32_t entry)
     }
     
     b_image.segments = 0;
+    b_image.num_segments = 0;
+    total_size = 0;
     
     LOGINFO("created structure for binimage \"%s\" with entry address 0x%08X", fname, b_image.entry);
     
@@ -114,9 +118,9 @@ void bimage_set_entry(uint32_t entry)
     LOGINFO("set bimage entry to 0x%08X", b_image.entry);
 }
 
-int binimage_write_close(uint32_t padsize)
+int binimage_write(uint32_t padsize, bool close)
 {
-    unsigned int cnt, cnt2, total_size;
+    unsigned int cnt, cnt2;
     unsigned char chksum;
     
     chksum = 0xEF;
@@ -187,8 +191,11 @@ int binimage_write_close(uint32_t padsize)
 
     LOGINFO("saved binimage file, total size is %i bytes, checksum byte is 0x%02X", total_size, chksum);
     
-    fclose(b_image.image_file);
-    b_image.image_file = 0;
+    if (close) 
+    {
+        fclose(b_image.image_file);
+        b_image.image_file = 0;
+    }
     
     if(b_image.segments)
     {
@@ -204,7 +211,36 @@ int binimage_write_close(uint32_t padsize)
         {
             LOGDEBUG("releasing memory used for binimage segment pointers");
             free(b_image.segments);
+            b_image.segments = 0;
+            b_image.num_segments = 0;
         }
+    }
+
+    return 1;
+}
+
+int binimage_write_close(uint32_t padsize)
+{
+    return binimage_write(padsize, true);
+}
+
+int binimage_write_padto(uint32_t padsize, uint32_t address)
+{
+    if (binimage_write(padsize, false) == 0)
+        return 0;
+
+    LOGDEBUG("binimage_write_padto: total:%x addr:%x", total_size, address);
+    if (address < total_size) 
+    {
+        LOGERR("binimage_write_padto: address is less than size written");
+        return 0;
+    }
+
+    while (total_size < address) 
+    {
+        if (fputc(0xff, b_image.image_file) == EOF)
+            return 0;
+        ++total_size;
     }
 
     return 1;

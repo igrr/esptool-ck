@@ -27,7 +27,8 @@
 
 #include <stdio.h>
 #include <inttypes.h>
-
+#include <stdbool.h>
+ 
 /*
 ** structs used to build and maintain internal representation
 ** of the binary firmware image
@@ -107,6 +108,10 @@ void bimage_set_entry(uint32_t entry);
 ** returns 1 on success, 0 on failure
 */
 int binimage_write_close(uint32_t padsize);
+
+
+int binimage_write_padto(uint32_t padsize, uint32_t address);
+
 
 
 /*
