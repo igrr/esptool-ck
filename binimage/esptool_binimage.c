@@ -238,7 +238,7 @@ int binimage_write_padto(uint32_t padsize, uint32_t address)
 
     while (total_size < address) 
     {
-        if (fputc(0xff, b_image.image_file) == EOF)
+        if (fputc(0xaa, b_image.image_file) == EOF)
             return 0;
         ++total_size;
     }
