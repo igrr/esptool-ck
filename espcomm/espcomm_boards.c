@@ -62,15 +62,17 @@ void espcomm_board_reset_into_app(espcomm_board_t* board)
 //
 //
 
-// "ck" board: dtr pulls down gpio0, rts pulls down reset 
+// "ck" board: dtr pulls down gpio0, rts pulls down reset
+// also supports reset with RC circuit triggered by break signal
 
 void board_ck_rb()
 {
     serialport_set_rts(1);
     serialport_set_dtr(1);
+    serialport_send_break();
     espcomm_delay_ms(5);
     serialport_set_rts(0);
-    espcomm_delay_ms(50);
+    espcomm_delay_ms(250);          // wait for break to finish
     serialport_set_dtr(0);
 }
 
@@ -112,4 +114,3 @@ static espcomm_board_t s_boards[] = {
 };
 
 static size_t s_boards_count = sizeof(s_boards) / sizeof(espcomm_board_t);
-
