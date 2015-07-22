@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "infohelper.h"
 #include "espcomm.h"
@@ -342,6 +343,7 @@ int espcomm_upload_file(char *name)
     struct stat st;
     uint32_t fsize;
     uint32_t fdone;
+    uint32_t write_size;
     
     uint32_t cnt;
     uint32_t res;
@@ -382,9 +384,11 @@ int espcomm_upload_file(char *name)
                 upload_stage = true;
                 while(fsize)
                 {
-                    flash_packet[0] = (uint32_t) fread(&flash_packet[4], 1, BLOCKSIZE_FLASH, f);
-                    fsize -= flash_packet[0];
-            
+                    memset(&flash_packet[4], 0xff, BLOCKSIZE_FLASH);
+                    write_size = (uint32_t) fread(&flash_packet[4], 1, BLOCKSIZE_FLASH, f);
+                    fsize -= write_size;
+
+                    flash_packet[0] = BLOCKSIZE_FLASH;
                     flash_packet[1] = cnt;
                     flash_packet[2] = 0;
                     flash_packet[3] = 0;
@@ -403,7 +407,7 @@ int espcomm_upload_file(char *name)
                     }
                     
                     cnt++;
-                    fdone += flash_packet[0];
+                    fdone += write_size;
                     INFO(".");
                     fflush(stdout);
                 }
