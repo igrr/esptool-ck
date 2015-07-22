@@ -1,6 +1,9 @@
 TARGET		= esptool
 
 INSTALLDIR_BIN	= /usr/local/bin
-TARGET_FLAGS	= 
-TARGET_CFLAGS   = -mmacosx-version-min=10.6
-TARGET_CXXFLAGS = -mmacosx-version-min=10.6
+CC=clang
+CXX=clang++
+TARGET_FLAGS	=
+TARGET_CFLAGS   = -mmacosx-version-min=10.6 -arch i386 -arch x86_64
+TARGET_CXXFLAGS = -mmacosx-version-min=10.6 -arch i386 -arch x86_64
+TARGET_LDFLAGS  = -arch i386 -arch x86_64

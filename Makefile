@@ -1,5 +1,5 @@
-CFLAGS		= -std=gnu99 -Os -Wall
-CXXFLAGS	= -std=c++11 -Os -Wall
+CFLAGS		+= -std=gnu99 -Os -Wall
+CXXFLAGS	+= -std=c++11 -Os -Wall
 
 
 ifeq ($(OS),Windows_NT)
@@ -55,7 +55,8 @@ INCLUDES	:= $(addprefix -I,$(MODULES))
 
 CFLAGS += $(TARGET_CFLAGS)
 CXXFLAGS += $(TARGET_CXXFLAGS)
-CPPFLAGS += $(INCLUDES) $(SDK_INCLUDES) -D$(TARGET_OS) -DVERSION=\"$(VERSION)\" 
+LDFLAGS += $(TARGET_LDFLAGS)
+CPPFLAGS += $(INCLUDES) $(SDK_INCLUDES) -D$(TARGET_OS) -DVERSION=\"$(VERSION)\"
 
 DIST_NAME := esptool-$(VERSION)-$(DIST_SUFFIX)
 DIST_DIR := $(DIST_NAME)
@@ -71,7 +72,7 @@ dist: $(TARGET) $(DIST_DIR)
 	$(ARCHIVE_CMD) $(DIST_ARCHIVE) $(DIST_DIR)
 
 $(TARGET): $(OBJECTS)
-	gcc $^ -o $@
+	$(CC) $^ -o $@ $(LDFLAGS)
 	strip $(TARGET)
 
 $(BUILD_DIR):
@@ -84,4 +85,3 @@ clean:
 	@rm -f $(OBJECTS)
 	@rm -f $(TARGET)
 	@rm -rf esptool-*
-
