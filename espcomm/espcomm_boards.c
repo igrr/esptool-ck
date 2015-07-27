@@ -103,7 +103,24 @@ void board_wifio_ra()
     serialport_set_dtr(1);
 }
 
+void board_ftdi_rb()
+{
+    serialport_set_rts(1);
+    serialport_set_dtr(0);
+    espcomm_delay_ms(5);
+    serialport_set_rts(0);
+    serialport_set_dtr(1);
+    espcomm_delay_ms(50);
+    serialport_set_rts(0);
+}
 
+void board_ftdi_ra()
+{
+    serialport_set_dtr(0);
+    serialport_set_rts(1);
+    espcomm_delay_ms(5);
+    serialport_set_rts(0);
+}
 
 /// list of all boards
 
@@ -111,6 +128,7 @@ static espcomm_board_t s_boards[] = {
     { "none",   0,                  0               },
     { "ck",     &board_ck_rb,       &board_ck_ra    },
     { "wifio",  &board_wifio_rb,    &board_wifio_ra},
+    { "ftdi",   &board_ftdi_rb,     &board_ftdi_ra},
 };
 
 static size_t s_boards_count = sizeof(s_boards) / sizeof(espcomm_board_t);
