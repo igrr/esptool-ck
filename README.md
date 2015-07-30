@@ -43,8 +43,7 @@ Name       | Description
 none       | No DTR/RTS manipulation
 ck         | RTS controls RESET or CH_PD, DTR controls GPIO0
 wifio      | TXD controls GPIO0 via PNP transistor and DTR controls RESET via a capacitor
-
-Support for NodeMCU board is coming up.
+nodemcu    | GPIO0 and RESET controlled using two NPN transistors as in [NodeMCU devkit](https://raw.githubusercontent.com/nodemcu/nodemcu-devkit/master/Documents/NODEMCU_DEVKIT_SCH.png).
 
 Examples
 --------
