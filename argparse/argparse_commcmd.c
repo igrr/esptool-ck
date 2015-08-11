@@ -25,16 +25,58 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include "infohelper.h"
 #include "esptool_elf.h"
 #include "esptool_elf_object.h"
 #include "esptool_binimage.h"
 #include "espcomm.h"
 
+
+bool upload_elf_section(const char* name)
+{
+    int entry = get_elf_entry();
+    int section = get_elf_secnum_by_name(name);
+    if (section == 0) {
+        LOGERR("failed to find section %s", name);
+        return false;
+    }
+
+    int start = get_elf_section_addr(section);
+    int size = get_elf_section_size(section);
+    LOGDEBUG("loading section %s, start=%x, size=%d", name, start, size);
+    if (entry < start || entry >= start + size)
+    {
+        LOGDEBUG("not starting app for this section");
+        entry = 0;
+    }
+    else
+    {
+        LOGDEBUG("will start app with entry=%x", entry);
+    }
+    uint8_t* data = get_elf_section_bindata(section, 4);
+    bool res = espcomm_upload_mem_to_RAM(data, size, start, entry);
+    free(data);
+    if (!res)
+    {
+        LOGERR("espcomm_upload_mem_to_RAM failed");
+        return false;
+    }
+    return true;
+}
+
+bool upload_file_compressed(const char* name)
+{
+    create_elf_object("esp/stub.elf");
+    upload_elf_section(".rodata");
+    upload_elf_section(".text");
+    return espcomm_upload_file_compressed(name);
+}
+
 int argparse_commcmd(int num_args, char **arg_ptr)
 {
     char *cur_cmd;
-    
+
     if(arg_ptr[0][1] == 'c' && num_args--)
     {
         cur_cmd = &arg_ptr[0][2];
@@ -52,7 +94,7 @@ int argparse_commcmd(int num_args, char **arg_ptr)
                     return 2;
                 }
                 break;
-                
+
             case 'b':
                 if(num_args < 1)
                 {
@@ -74,7 +116,7 @@ int argparse_commcmd(int num_args, char **arg_ptr)
                     return 2;
                 }
                 break;
-                
+
             case 'f':
                 if(num_args < 1)
                 {
@@ -85,6 +127,29 @@ int argparse_commcmd(int num_args, char **arg_ptr)
                     return 2;
                 }
                 break;
+
+            case 'e':
+                if (num_args < 1)
+                {
+                    return 0;
+                }
+                if (upload_elf_section(arg_ptr[0]))
+                {
+                    return 2;
+                }
+                break;
+
+            case 'z':
+                if(num_args < 1)
+                {
+                    return 0;
+                }
+                if(upload_file_compressed(arg_ptr[0]))
+                {
+                    return 2;
+                }
+                break;
+
 
             case 'd':
                 if (num_args < 1)

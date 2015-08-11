@@ -32,7 +32,7 @@ endif
 
 VERSION ?= $(shell git describe --always)
 
-MODULES		:= infohelper elf binimage argparse serialport espcomm
+MODULES		:= infohelper elf binimage argparse serialport espcomm miniz
 
 -include local/Makefile.local.$(TARGET_OS)
 
@@ -46,6 +46,7 @@ OBJECTS		:= \
 	elf/esptool_elf_object.o \
 	espcomm/delay.o \
 	espcomm/espcomm.o \
+	espcomm/espcomm_upload_compressed.o \
 	espcomm/espcomm_boards.o \
 	infohelper/infohelper.o \
 	serialport/serialport.o \
@@ -72,7 +73,7 @@ dist: $(TARGET) $(DIST_DIR)
 	$(ARCHIVE_CMD) $(DIST_ARCHIVE) $(DIST_DIR)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $^ -o $@ $(LDFLAGS)
+	$(CXX) $^ -o $@ $(LDFLAGS)
 	strip $(TARGET)
 
 $(BUILD_DIR):
