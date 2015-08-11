@@ -25,6 +25,9 @@
 #ifndef ESPCOMM_H
 #define ESPCOMM_H
 
+#include <stdbool.h>
+#include <stdint.h>
+
 enum
 {
     CMD0                        = 0x00,
@@ -52,9 +55,9 @@ typedef struct
         uint32_t    checksum;
         uint32_t    response;
     };
-    
+
     unsigned char *data;
-    
+
 } bootloader_packet;
 
 #define BLOCKSIZE_FLASH         0x0400
@@ -68,7 +71,10 @@ int espcomm_set_board(const char* name);
 int espcomm_open(void);
 void espcomm_close(void);
 
-int espcomm_upload_file(char *name);
+bool espcomm_upload_mem_to_RAM(uint8_t* src, size_t size, int address, int entry);
+bool espcomm_upload_mem(uint8_t* src, size_t size);
+bool espcomm_upload_file(const char *name);
+bool espcomm_upload_file_compressed(const char* name);
 int espcomm_file_uploaded();
 int espcomm_start_app(int reboot);
 
