@@ -112,7 +112,7 @@ void board_nodemcu_rb()
     serialport_set_rts(0);
     serialport_set_dtr(1);
     espcomm_delay_ms(50);
-    serialport_set_rts(0);
+    serialport_set_dtr(0);
 }
 
 void board_nodemcu_ra()
