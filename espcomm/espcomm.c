@@ -631,3 +631,44 @@ int espcomm_set_chip(const char* name)
     }
     return 1;
 }
+
+bool espcomm_erase_flash()
+{
+    LOGDEBUG("espcomm_erase_flash");
+    if(!espcomm_open())
+    {
+        LOGERR("espcomm_open failed");
+        return false;
+    }
+
+    flash_packet[0] = 0;
+    flash_packet[1] = 0x00000200;
+    flash_packet[2] = BLOCKSIZE_FLASH;
+    flash_packet[3] = 0;
+    send_packet.checksum = espcomm_calc_checksum((unsigned char*) flash_packet, 16);
+    int res = espcomm_send_command(FLASH_DOWNLOAD_BEGIN, (unsigned char*) &flash_packet, 16, 1000);
+    if (res == 0)
+    {
+        LOGERR("espcomm_erase_flash: FLASH_DOWNLOAD_BEGIN failed");
+        return false;
+    }
+
+    ram_packet[0] = 0;
+    ram_packet[1] = 0x00000200;
+    ram_packet[2] = BLOCKSIZE_RAM;
+    ram_packet[3] = 0x40100000;
+
+    send_packet.checksum = espcomm_calc_checksum((unsigned char*) ram_packet, 16);
+    res = espcomm_send_command(RAM_DOWNLOAD_BEGIN, (unsigned char*) &ram_packet, 16, 0);
+    if (res == 0)
+    {
+        LOGERR("espcomm_erase_flash: RAM_DOWNLOAD_BEGIN failed");
+        return false;
+    }
+
+    ram_packet[0] = 0;
+    ram_packet[1] = 0x40004984;
+    send_packet.checksum = 0;
+    espcomm_send_command(RAM_DOWNLOAD_END, (unsigned char*) ram_packet, 8, 0);
+    return true;
+}
