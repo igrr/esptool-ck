@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
 
 #include "infohelper.h"
 #include "espcomm.h"
@@ -427,7 +428,7 @@ int espcomm_upload_file(char *name)
     }
     else
     {
-        LOGERR("stat %s failed", name);
+        LOGERR("stat %s failed: %s", name, strerror(errno));
     }
     return 0;
 }
