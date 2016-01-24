@@ -71,6 +71,10 @@ static uint32_t flash_packet[BLOCKSIZE_FLASH+32];
 
 static int file_uploaded = 0;
 
+typedef enum {ESPCOMM_8266, ESPCOMM_32} espcomm_chip_t;
+
+static espcomm_chip_t s_chip = ESPCOMM_8266;
+
 static void espcomm_enter_boot(void)
 {
     espcomm_board_reset_into_bootloader(espcomm_board);
@@ -288,45 +292,81 @@ void espcomm_close(void)
     serialport_close();
 }
 
+int espcomm_set_flash_params(uint32_t device_id, uint32_t chip_size,
+    uint32_t block_size, uint32_t sector_size,
+    uint32_t page_size, uint32_t status_mask)
+{
+    LOGDEBUG("espcomm_set_flash_params: %x %x %x %x %x %x", device_id, chip_size,
+                block_size, sector_size, page_size, status_mask);
+
+    flash_packet[0] = device_id;
+    flash_packet[1] = chip_size;
+    flash_packet[2] = block_size;
+    flash_packet[3] = sector_size;
+    flash_packet[4] = page_size;
+    flash_packet[5] = status_mask;
+
+    send_packet.checksum = espcomm_calc_checksum((unsigned char*) flash_packet, 24);
+
+    uint32_t res = espcomm_send_command(SET_FLASH_PARAMS, (unsigned char*) &flash_packet, 24, 0);
+    return res;
+}
+
 int espcomm_start_flash(uint32_t size, uint32_t address)
 {
     uint32_t res;
 
     LOGDEBUG("size: %06x address: %06x", size, address);
+    int erase_size;
 
-    const int sector_size = 4096;
-    const int sectors_per_block  = 16;
-    const int first_sector_index = address / sector_size;
-    LOGDEBUG("first_sector_index: %d", first_sector_index);
+    if (s_chip == ESPCOMM_8266)
+    {
+        const int sector_size = 4096;
+        const int sectors_per_block  = 16;
+        const int first_sector_index = address / sector_size;
+        LOGDEBUG("first_sector_index: %d", first_sector_index);
 
-    const int total_sector_count = ((size % sector_size) == 0) ? 
-                                    (size / sector_size) : (size / sector_size + 1);
-    LOGDEBUG("total_sector_count: %d", total_sector_count);
+        const int total_sector_count = ((size % sector_size) == 0) ?
+                                        (size / sector_size) : (size / sector_size + 1);
+        LOGDEBUG("total_sector_count: %d", total_sector_count);
 
-    const int max_head_sector_count  = sectors_per_block - (first_sector_index % sectors_per_block);
-    const int head_sector_count = (max_head_sector_count > total_sector_count) ? 
-                                    total_sector_count : max_head_sector_count;
-    LOGDEBUG("head_sector_count: %d", head_sector_count);
+        const int max_head_sector_count  = sectors_per_block - (first_sector_index % sectors_per_block);
+        const int head_sector_count = (max_head_sector_count > total_sector_count) ?
+                                        total_sector_count : max_head_sector_count;
+        LOGDEBUG("head_sector_count: %d", head_sector_count);
 
-    // SPIEraseArea function in the esp8266 ROM has a bug which causes extra area to be erased.
-    // If the address range to be erased crosses the block boundary,
-    // then extra head_sector_count sectors are erased.
-    // If the address range doesn't cross the block boundary,
-    // then extra total_sector_count sectors are erased.
+        // SPIEraseArea function in the esp8266 ROM has a bug which causes extra area to be erased.
+        // If the address range to be erased crosses the block boundary,
+        // then extra head_sector_count sectors are erased.
+        // If the address range doesn't cross the block boundary,
+        // then extra total_sector_count sectors are erased.
 
-    const int adjusted_sector_count = (total_sector_count > 2 * head_sector_count) ?
-                                      (total_sector_count - head_sector_count):
-                                      (total_sector_count + 1) / 2;
-    LOGDEBUG("adjusted_sector_count: %d", adjusted_sector_count);
+        const int adjusted_sector_count = (total_sector_count > 2 * head_sector_count) ?
+                                          (total_sector_count - head_sector_count):
+                                          (total_sector_count + 1) / 2;
+        LOGDEBUG("adjusted_sector_count: %d", adjusted_sector_count);
 
-    const int adjusted_size = adjusted_sector_count * sector_size;
-    LOGDEBUG("adjusted_size: %06x", adjusted_size);
-    
-    flash_packet[0] = adjusted_size;
-    flash_packet[1] = 0x00000200;
+        erase_size = adjusted_sector_count * sector_size;
+    }
+    else {
+        erase_size = size;
+
+        res = espcomm_set_flash_params(0, (128/8)*1024*1024, 64*1024, 4*1024, 256, 0xffff);
+        if (res == 0)
+        {
+            LOGWARN("espcomm_send_command(SET_FLASH_PARAMS) failed");
+            return res;
+        }
+    }
+
+
+    LOGDEBUG("erase_size: %06x", erase_size);
+
+    flash_packet[0] = erase_size;
+    flash_packet[1] = (size + BLOCKSIZE_FLASH - 1) / BLOCKSIZE_FLASH;
     flash_packet[2] = BLOCKSIZE_FLASH;
     flash_packet[3] = address;
-    
+
     send_packet.checksum = espcomm_calc_checksum((unsigned char*) flash_packet, 16);
 
     // int timeout_ms = size / erase_block_size * delay_per_erase_block_ms + 250;
@@ -503,3 +543,18 @@ int espcomm_set_board(const char* name)
     return 1;
 }
 
+int espcomm_set_chip(const char* name)
+{
+    LOGDEBUG("setting chip to %s", name);
+    if (strcmp(name, "esp8266") == 0 || strcmp(name, "8266") == 0) {
+        s_chip = ESPCOMM_8266;
+    }
+    else if (strcmp(name, "esp32") == 0 || strcmp(name, "32") == 0) {
+        s_chip = ESPCOMM_32;
+    }
+    else {
+        LOGERR("unknown chip: %s", name);
+        return 0;
+    }
+    return 1;
+}

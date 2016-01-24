@@ -38,6 +38,7 @@ enum
     SYNC_FRAME                  = 0x08,
     WRITE_REGISTER              = 0x09,
     READ_REGISTER               = 0x0A,
+    SET_FLASH_PARAMS            = 0x0B,
     NO_COMMAND                  = 0xFF
 };
 
@@ -64,6 +65,7 @@ int espcomm_set_port(char *port);
 int espcomm_set_baudrate(const char *baudrate);
 int espcomm_set_address(const char *address);
 int espcomm_set_board(const char* name);
+int espcomm_set_chip(const char* name);
 
 int espcomm_open(void);
 void espcomm_close(void);
