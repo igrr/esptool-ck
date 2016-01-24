@@ -33,6 +33,7 @@ void espcomm_delay_ms(int ms)
 
 
 #else
+#include <unistd.h>
 
 void espcomm_delay_ms(int ms)
 {
