@@ -1,6 +1,6 @@
-**Esptool** is a tool to create firmware files for the ESP8266 chip and flash the firmware to the chip over serial port. Esptool runs on Windows, Linux and Mac OS X.
+**Esptool** is a tool to create firmware files for the ESP8266/ESP32 chips and flash the firmware to the chip over serial port. Esptool runs on Windows, Linux and Mac OS X.
 
-Esptool reads the compiled program in ELF format, extracts code and data sections, and either dumps a section to a file or assembles the firmware file from several segments. Esptool also communicates with the ESP8266 bootloader to upload firmware files to flash. Esptool can automatically put the board into UART bootloader mode using a variety of methods.
+Esptool reads the compiled program in ELF format, extracts code and data sections, and either dumps a section to a file or assembles the firmware file from several segments. Esptool also communicates with the bootloader to upload firmware files to flash. Esptool can automatically put the board into UART bootloader mode using a variety of methods.
 
 Linux|Windows
 ----- | ------
@@ -22,7 +22,7 @@ Argument | Description
 ```-es <section> <filename>``` | Reads the given section from the ELF file and makes a raw dump into the specified file.
 ```-ec``` | Closes the currently opened ELF file
 ```-bo <filename> ```| Prepares an firmware file in the format that is understood by the ESP chip. Only works if an ELF file is opened, and if no firmware file is prepared yet. Upon -bo the tool will start out with an empty image where only the main header is set up. The result of the operations done on the firmware image are saved when the it is finally closed using -bc command.
-```-bm <qio|qout|dio|dout>``` | Set the flash chip interface mode. Default is QIO. This parameter is stored in the binary image header, along with the flash size and flash frequency. The ROM bootloader in the ESP8266 uses the value of these parameters in order to know how to talk to the flash chip.
+```-bm <qio|qout|dio|dout>``` | Set the flash chip interface mode. Default is QIO. This parameter is stored in the binary image header, along with the flash size and flash frequency. The ROM bootloader in the ESP chip uses the value of these parameters in order to know how to talk to the flash chip.
 ```-bz <512K|256K|1M|2M|4M|8M|16M|32M>``` | Set the flash chip size. Default is 512K.
 ```-bf <40|26|20|80>``` | Set the flash chip frequency, in MHz. Default is 40M.
 ```-bs <section>``` | Reads the specified section from the ELF file and appends it to the firmware image. Sections will appear in the firmware image in the exact same order as the -bs commands are executed.
@@ -35,7 +35,7 @@ Argument | Description
 ```-ca <address>``` | Address in flash memory to upload the data to. This address is interpreted as hexadecimal. Default is 0x00000000.
 ```-cf <filename>``` | Upload the file to flash. Parameters that set the port, baud rate, and address must preceed the -cf command.
 ```-cp <size>``` | Pad last written section of firmware image to the given size, in bytes.
-```-cc <chip>``` | Select chip to upload to. Currently supported values: `esp8266`, `esp32`
+```-cc <chip>``` | Select chip to upload to. Currently supported values: `esp8266` (default), `esp32`
 
 Supported boards
 ----------------
