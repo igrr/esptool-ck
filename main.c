@@ -39,21 +39,21 @@ int main(int argc, char **argv)
     int num_args;
     int num_args_parsed;
     char **arg_ptr;
-    
+
     num_args = argc-1;
     arg_ptr = argv;
     arg_ptr++;
-    
+
     if(argc < 2)
     {
-        LOGERR("No arguments given");
+        LOGERR("No arguments given. Use -h for help.");
         return 0;
     }
 	infohelper_set_infolevel(1);
     infohelper_set_argverbosity(num_args, arg_ptr);
-    
+
     LOGINFO("esptool v" VERSION " - (c) 2014 Ch. Klippel <ck@atelier-klippel.de>");
-    
+
     while(num_args)
     {
         num_args_parsed = parse_arg(num_args, arg_ptr);
@@ -61,11 +61,11 @@ int main(int argc, char **argv)
         {
             goto EXITERROR;
         }
-        
+
         num_args -= num_args_parsed;
         arg_ptr += num_args_parsed;
     }
-    
+
     if (espcomm_file_uploaded())
     {
         espcomm_start_app(0);
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
     close_elf_object();
     binimage_write_close(16);
     return 0;
-    
+
 EXITERROR:
     close_elf_object();
     binimage_write_close(16);

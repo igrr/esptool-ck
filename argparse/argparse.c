@@ -33,6 +33,91 @@
 // the called sub-parser
 #include "argparse.h"
 
+static void print_help()
+{
+    const char* help = "\
+esptool v" VERSION " - (c) 2014 Ch. Klippel <ck@atelier-klippel.de>\n\
+ESP8266/ESP32 build and upload helper tool\n\
+Maintained by Ivan Grokhotkov: https://github.com/igrr/esptool-ck\n\
+\n\
+The program interprets arguments given on the command line, and in the order\n\
+they are given.\n\
+\n\
+-eo <filename>	\n\
+    Open an ELF object file, parse it and cache some of the information found \n\
+    therein. Works only if there is no ELF file currently opened.\n\
+\n\
+-es <section> <filename> \n\
+    Read the given section from the ELF file and make a raw dump into the \n\
+    specified file.\n\
+-ec\n\
+    Close the currently opened ELF file.\n\
+\n\
+-bo <filename> \n\
+    Prepare a firmware file in the format that is understood by the ESP chip. \n\
+    Works only if an ELF file is opened, and if no firmware file is prepared yet.\n\
+    Upon -bo the tool will start out with an empty image where only the main \n\
+    header is set up. The result of the operations done on the firmware image \n\
+    is saved when the it is finally closed using -bc command.\n\
+\n\
+-bm <qio|qout|dio|dout> \n\
+    Set the flash chip interface mode. Default is QIO. \n\
+    This parameter is stored in the binary image header, along with the flash size\n\
+    and flash frequency. The ROM bootloader in the ESP8266 uses the value \n\
+    of these parameters in order to know how to talk to the flash chip.\n\
+\n\
+-bz <512K|256K|1M|2M|4M|8M|16M|32M>	\n\
+    Set the flash chip size. Default is 512K.\n\
+\n\
+-bf <40|26|20|80>\n\
+    Set the flash chip frequency, in MHz. Default is 40M.\n\
+\n\
+-bs <section>\n\
+    Read the specified section from the ELF file and append it to the \n\
+    firmware image. Sections will appear in the firmware image in the exact \n\
+    same order as the -bs commands are executed.\n\
+\n\
+-bp <size>\n\
+    Pad last written section of firmware image to the given size, in bytes.\n\
+\n\
+-bc\n\
+    Close the firmware image and save the result as file to disk.\n\
+\n\
+-v\n\
+    Increase verbosity level of the tool.\n\
+    Add more v's to increase it even more, e.g. -vv, -vvv.\n\
+\n\
+-q\n\
+    Disable most of the output.\n\
+\n\
+-cp <device>\n\
+    Select the serial port device to use for communicating with the ESP.\n\
+    Default is /dev/ttyUSB0 on Linux, COM1 on Windows, /dev/tty.usbserial on Mac OS.\n\
+\n\
+-cd <board>\n\
+    Select the reset method to use for resetting the board.\n\
+    Currently supported methods are: none, ck, nodemcu, wifio.\n\
+\n\
+-cb <baudrate>\n\
+    Select the baudrate to use, default is 115200.\n\
+\n\
+-ca <address>\n\
+    Address in flash memory to upload the data to.\n\
+    This address is interpreted as hexadecimal. Default is 0x00000000.\n\
+\n\
+-cf <filename>\n\
+    Upload the file to flash. Parameters that set the port, baud rate, and address\n\
+    must preceed the -cf command.\n\
+\n\
+-ce\n\
+    Erase flash.\n\
+\n\
+-cc <chip>\n\
+    Select chip to upload to. Currently supported values: 'esp8266' (default), 'esp32'\n\
+\n";
+    INFO(help);
+}
+
 int parse_arg(int num_args, char **arg_ptr)
 {
     if(arg_ptr[0][0] == '-' && num_args)
@@ -47,12 +132,12 @@ int parse_arg(int num_args, char **arg_ptr)
             case 'e':
                 return argparse_elfcmd(num_args, arg_ptr);
                 break;
-                
+
             // binary flash image related commands
             case 'b':
                 return argparse_binimagecmd(num_args, arg_ptr);
                 break;
-                
+
             // comms related commands (flash upload, etc.)
             case 'c':
                 return argparse_commcmd(num_args, arg_ptr);
@@ -64,25 +149,9 @@ int parse_arg(int num_args, char **arg_ptr)
                 break;
 
             case '?':
-            	INFO(\
-"esptool\n" \
-"-------\n" \
-"-eo <filename>	Opens an ELF object file, parses it and caches some of the information found therein. Only works if there is no ELF file currently opened.\n" \
-"-es <section> <filename> Reads the given section from the ELF file and makes a raw dump into the specified file.\n" \
-"-ec            Closes the currently opened ELF file.\n" \
-"-bo <filename> Prepares an firmware file in the format that is understood by the ESP chip. Only works if an ELF file is opened, and if no firmware file is prepared yet. Upon -bo the tool will start out with an empty image where only the main header is set up. The result of the operations done on the firmware image are saved when the it is finally closed using -bc command.\n" \
-"-bm <qio|qout|dio|dout> Set the flash chip interface mode. Default is QIO. This parameter is stored in the binary image header, along with the flash size and flash frequency. The ROM bootloader in the ESP8266 uses the value of these parameters in order to know how to talk to the flash chip.\n" \
-"-bz <512K|256K|1M|2M|4M|8M|16M|32M>	Set the flash chip size. Default is 512K.\n" \
-"-bf <40|26|20|80> Set the flash chip frequency, in MHz. Default is 40M.\n" \
-"-bs <section>  Reads the specified section from the ELF file and appends it to the firmware image. Sections will appear in the firmware image in the exact same order as the -bs commands are executed.\n" \
-"-bc            Closes the firmware image and saves the result as file to disk.\n" \
-"-v             Increase verbosity level of the tool. Add more v's to increase it even more, e.g. -vv, -vvv.\n" \
-"-q             Disable most of the output.\n" \
-"-cp <device>   Select the serial port device to use for communicating with the ESP. Default is /dev/ttyUSB0 on Linux, COM1 on Windows, /dev/tty.usbserial on Mac OS X.\n" \
-"-cd <board>    Select the reset method to use for resetting the board. Currently supported methods are listed below.\n" \
-"-cb <baudrate> Select the baudrate to use, default is 115200.\n" \
-"-ca <address>  Address in flash memory to upload the data to. This address is interpreted as hexadecimal. Default is 0x00000000.\n" \
-"-cf <filename> Upload the file to flash. Parameters that set the port, baud rate, and address must preceed the -cf command.\n");
+            case 'h':
+            	print_help();
+                return 1;
             	break;
 
             default:
@@ -90,6 +159,6 @@ int parse_arg(int num_args, char **arg_ptr)
                 break;
         }
     }
-    
+
     return 0;
 }

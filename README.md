@@ -18,15 +18,16 @@ The following commands are currently available:
 
 Argument | Description
 ---------|-------------
-```-eo <filename>``` | Opens an ELF object file, parses it and caches some of the information found therein. Only works if there is no ELF file currently opened.
-```-es <section> <filename>``` | Reads the given section from the ELF file and makes a raw dump into the specified file.
-```-ec``` | Closes the currently opened ELF file
-```-bo <filename> ```| Prepares an firmware file in the format that is understood by the ESP chip. Only works if an ELF file is opened, and if no firmware file is prepared yet. Upon -bo the tool will start out with an empty image where only the main header is set up. The result of the operations done on the firmware image are saved when the it is finally closed using -bc command.
+```-eo <filename>``` | Open an ELF object file, parse it and cache some of the information found therein. Works only if there is no ELF file currently opened.
+```-es <section> <filename>``` | Read the given section from the ELF file and make a raw dump into the specified file.
+```-ec``` | Close the currently opened ELF file
+```-bo <filename> ```| Prepare a firmware file in the format that is understood by the ESP chip. Works only if an ELF file is opened, and if no firmware file is prepared yet. Upon -bo the tool will start out with an empty image where only the main header is set up. The result of the operations done on the firmware image is saved when the it is finally closed using -bc command.
 ```-bm <qio|qout|dio|dout>``` | Set the flash chip interface mode. Default is QIO. This parameter is stored in the binary image header, along with the flash size and flash frequency. The ROM bootloader in the ESP chip uses the value of these parameters in order to know how to talk to the flash chip.
 ```-bz <512K|256K|1M|2M|4M|8M|16M|32M>``` | Set the flash chip size. Default is 512K.
 ```-bf <40|26|20|80>``` | Set the flash chip frequency, in MHz. Default is 40M.
-```-bs <section>``` | Reads the specified section from the ELF file and appends it to the firmware image. Sections will appear in the firmware image in the exact same order as the -bs commands are executed.
-```-bc``` | Closes the firmware image and saves the result as file to disk.
+```-bs <section>``` | Read the specified section from the ELF file and append it to the firmware image. Sections will appear in the firmware image in the exact same order as the -bs commands are executed.
+```-bp <size>``` | Pad last written section of firmware image to the given size, in bytes.
+```-bc``` | Close the firmware image and save the result as file to disk.
 ```-v``` | Increase verbosity level of the tool. Add more v's to increase it even more, e.g. -vv, -vvv.
 ```-q``` | Disable most of the output.
 ```-cp <device>``` | Select the serial port device to use for communicating with the ESP. Default is /dev/ttyUSB0 on Linux, COM1 on Windows, /dev/tty.usbserial on Mac OS X.
@@ -35,7 +36,6 @@ Argument | Description
 ```-ca <address>``` | Address in flash memory to upload the data to. This address is interpreted as hexadecimal. Default is 0x00000000.
 ```-cf <filename>``` | Upload the file to flash. Parameters that set the port, baud rate, and address must preceed the -cf command.
 ```-ce``` | Erase flash
-```-cp <size>``` | Pad last written section of firmware image to the given size, in bytes.
 ```-cc <chip>``` | Select chip to upload to. Currently supported values: `esp8266` (default), `esp32`
 
 Supported boards
