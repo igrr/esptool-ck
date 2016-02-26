@@ -17,6 +17,7 @@ notifications:
     on_failure: change
 deploy:
   provider: releases
+  skip_cleanup: true
   api_key:
     secure: Lg/Po5YFRcnrpqjgrdHcyGdxhRe8iB01Og8hvTmhhDxew1mpVHCfcZxO1VMpBxWnLS3ud4UdMjC3RBpcCWTvt0w9g35Vt9cj7XgnBEBHrBBA5DL+E5cAj/5Sf63pztc85m/kB0WODNG2NQiTpjonszrFHpmWdmXp3mqP95mZVBw=
   file: esptool-$TRAVIS_TAG-$PLATFORM.tar.gz
