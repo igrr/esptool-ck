@@ -61,13 +61,13 @@ static unsigned int espcomm_baudrate = 115200;
 static uint32_t espcomm_address = 0x00000;
 
 static unsigned char sync_frame[36] = { 0x07, 0x07, 0x12, 0x20,
-                               0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 
-                               0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 
-                               0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 
+                               0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+                               0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+                               0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
                                0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 };
-                               
+
 static uint32_t flash_packet[BLOCKSIZE_FLASH+32];
-//static uint32_t ram_packet[BLOCKSIZE_RAM+32];
+static uint32_t ram_packet[BLOCKSIZE_RAM+32];
 
 static int file_uploaded = 0;
 
@@ -89,14 +89,14 @@ uint32_t espcomm_calc_checksum(unsigned char *data, uint16_t data_size)
 {
     uint16_t cnt;
     uint32_t result;
-    
+
     result = 0xEF;
-    
+
     for(cnt = 0; cnt < data_size; cnt++)
     {
         result ^= data[cnt];
     }
-    
+
     return result;
 }
 
@@ -111,7 +111,7 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
         send_packet.direction = 0x00;
         send_packet.command = command;
         send_packet.size = data_size;
-        
+
         serialport_send_C0();
 
         if (!upload_stage)
@@ -120,7 +120,7 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
             LOGVERBOSE("espcomm_send_command: sending command header");
 
         serialport_send_slip((unsigned char*) &send_packet, 8);
-        
+
         if(data_size)
         {
             if (!upload_stage)
@@ -133,7 +133,7 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
         {
             LOGDEBUG("espcomm_send_command: no payload");
         }
-        
+
         serialport_send_C0();
     }
 
@@ -141,17 +141,17 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
     serialport_drain();
 
     int old_timeout = 0;
-    if (reply_timeout) 
+    if (reply_timeout)
     {
         old_timeout = serialport_get_timeout();
         serialport_set_timeout(reply_timeout);
     }
-    
+
     if(serialport_receive_C0())
     {
         if (old_timeout)
             serialport_set_timeout(old_timeout);
-        
+
         if(serialport_receive_slip((unsigned char*) &receive_packet, 8))
         {
             if(receive_packet.size)
@@ -166,9 +166,9 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
                     free(receive_packet.data);
                     receive_packet.data = NULL;
                 }
-                
+
                 receive_packet.data = malloc(receive_packet.size);
-                
+
                 if(serialport_receive_slip(receive_packet.data, receive_packet.size) == 0)
                 {
                     LOGWARN("espcomm_send_command: cant receive slip payload data");
@@ -183,7 +183,7 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
                     }
                 }
             }
-            
+
             if(serialport_receive_C0())
             {
                 if(receive_packet.direction == 0x01 &&
@@ -193,7 +193,7 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
                 }
                 else
                 {
-                    LOGWARN("espcomm_send_command: wrong direction/command: 0x%02X 0x%02X, expected 0x%02X 0x%02X", 
+                    LOGWARN("espcomm_send_command: wrong direction/command: 0x%02X 0x%02X, expected 0x%02X 0x%02X",
 						receive_packet.direction, receive_packet.command, 1, command);
 					return 0;
                 }
@@ -224,7 +224,7 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
             LOGVERBOSE("espcomm_send_command: didn't receive command response");
 		return 0;
     }
-    
+
     LOGVERBOSE("espcomm_send_command: response 0x%08X", result);
     return result;
 }
@@ -272,7 +272,7 @@ int espcomm_open(void)
 {
 	if (espcomm_is_open)
 		return 1;
-		
+
     if(serialport_open(espcomm_port, espcomm_baudrate))
     {
         LOGINFO("opening bootloader");
@@ -282,7 +282,7 @@ int espcomm_open(void)
 			return 1;
 		}
     }
-    
+
     return 0;
 }
 
@@ -376,101 +376,174 @@ int espcomm_start_flash(uint32_t size, uint32_t address)
     return res;
 }
 
+bool espcomm_upload_mem(uint8_t* src, size_t size)
+{
+    LOGDEBUG("espcomm_upload_mem");
+    if(!espcomm_open())
+    {
+        LOGERR("espcomm_open failed");
+        return false;
+    }
 
-int espcomm_upload_file(char *name)
+    INFO("Uploading %i bytes from to flash at 0x%08X\n", size, espcomm_address);
+    LOGDEBUG("erasing flash");
+    int res = espcomm_start_flash(size, espcomm_address);
+    if (res == 0)
+    {
+        LOGWARN("espcomm_send_command(FLASH_DOWNLOAD_BEGIN) failed");
+        espcomm_close();
+        return false;
+    }
+
+    LOGDEBUG("writing flash");
+    upload_stage = true;
+    size_t count = 0;
+    while(size)
+    {
+        flash_packet[0] = BLOCKSIZE_FLASH;
+        flash_packet[1] = count;
+        flash_packet[2] = 0;
+        flash_packet[3] = 0;
+
+        memset(flash_packet + 4, 0xff, BLOCKSIZE_FLASH);
+
+        size_t write_size = (size < BLOCKSIZE_FLASH)?size:BLOCKSIZE_FLASH;
+        memcpy(flash_packet + 4, src, write_size);
+        size -= write_size;
+        src += write_size;
+
+        send_packet.checksum = espcomm_calc_checksum((unsigned char *) (flash_packet + 4), BLOCKSIZE_FLASH);
+        res = espcomm_send_command(FLASH_DOWNLOAD_DATA, (unsigned char*) flash_packet, BLOCKSIZE_FLASH + 16, 0);
+
+        if(res == 0)
+        {
+            LOGWARN("espcomm_send_command(FLASH_DOWNLOAD_DATA) failed");
+            res = espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) flash_packet, 4, 0);
+            espcomm_close();
+            upload_stage = false;
+            return false;
+        }
+
+        ++count;
+        INFO(".");
+        fflush(stdout);
+    }
+    upload_stage = false;
+    INFO("\n");
+    file_uploaded = 1;
+    return true;
+}
+
+bool espcomm_upload_mem_to_RAM(uint8_t* src, size_t size, int address, int entry)
+{
+    LOGDEBUG("espcomm_upload_mem");
+    if(!espcomm_open())
+    {
+        LOGERR("espcomm_open failed");
+        return false;
+    }
+
+    INFO("Uploading %i bytes to RAM at 0x%08X\n", size, address);
+
+    ram_packet[0] = size;
+    ram_packet[1] = 0x00000200;
+    ram_packet[2] = BLOCKSIZE_RAM;
+    ram_packet[3] = address;
+
+    send_packet.checksum = espcomm_calc_checksum((unsigned char*) ram_packet, 16);
+    int res = espcomm_send_command(RAM_DOWNLOAD_BEGIN, (unsigned char*) &ram_packet, 16, 0);
+    if (res == 0)
+    {
+        LOGWARN("espcomm_send_command(RAM_DOWNLOAD_BEGIN) failed");
+        espcomm_close();
+        return false;
+    }
+
+    LOGDEBUG("writing to RAM");
+    upload_stage = true;
+    size_t count = 0;
+    while(size)
+    {
+        size_t will_write = (size < BLOCKSIZE_RAM)?size:BLOCKSIZE_RAM;
+        will_write = (will_write + 3) & (~3);
+
+        ram_packet[0] = will_write;
+        ram_packet[1] = count;
+        ram_packet[2] = 0;
+        ram_packet[3] = 0;
+
+        memset(ram_packet + 4, 0xff, BLOCKSIZE_RAM);
+
+        size_t write_size = (size < BLOCKSIZE_RAM)?size:BLOCKSIZE_RAM;
+        memcpy(ram_packet + 4, src, write_size);
+        size -= write_size;
+        src += write_size;
+
+        send_packet.checksum = espcomm_calc_checksum((unsigned char *) (ram_packet + 4), will_write);
+        res = espcomm_send_command(RAM_DOWNLOAD_DATA, (unsigned char*) ram_packet, will_write + 16, 0);
+
+        if(res == 0)
+        {
+            LOGWARN("espcomm_send_command(RAM_DOWNLOAD_DATA) failed");
+            espcomm_close();
+            upload_stage = false;
+            return false;
+        }
+        ++count;
+        INFO(".");
+        fflush(stdout);
+    }
+    upload_stage = false;
+    INFO("\n");
+    ram_packet[0] = (entry)?0:1;
+    ram_packet[1] = entry;
+    send_packet.checksum = 0;
+    res = espcomm_send_command(RAM_DOWNLOAD_END, (unsigned char*) ram_packet, 8, 0);
+    return true;
+}
+
+bool espcomm_upload_file(const char *name)
 {
     LOGDEBUG("espcomm_upload_file");
-    FILE *f;
     struct stat st;
-    uint32_t fsize;
-    uint32_t fdone;
-    uint32_t write_size;
-    
-    uint32_t cnt;
-    uint32_t res;
-    
-    if(stat(name, &st) == 0)
-    {
-        LOGDEBUG("stat %s success", name);
-        if(espcomm_open())
-        {
-            LOGDEBUG("espcomm_open");
-            fsize = (uint32_t) st.st_size;
-
-            f = fopen( name, "rb");
-            
-            cnt = 0;
-            flash_packet[0] = 0;
-            flash_packet[1] = 0;
-            flash_packet[2] = 0;
-            flash_packet[3] = 0;
-
-            if(f)
-            {
-                fdone = 0;
-
-                INFO("Uploading %i bytes from %s to flash at 0x%08X\n", fsize, name, espcomm_address);
-
-                LOGDEBUG("erasing flash");
-                res = espcomm_start_flash(fsize, espcomm_address);
-				if (res == 0)
-				{
-					LOGWARN("espcomm_send_command(FLASH_DOWNLOAD_BEGIN) failed");
-					fclose(f);
-					espcomm_close();
-					return 0;
-				}
-                
-                LOGDEBUG("writing flash");
-                upload_stage = true;
-                while(fsize)
-                {
-                    memset(&flash_packet[4], 0xff, BLOCKSIZE_FLASH);
-                    write_size = (uint32_t) fread(&flash_packet[4], 1, BLOCKSIZE_FLASH, f);
-                    fsize -= write_size;
-
-                    flash_packet[0] = BLOCKSIZE_FLASH;
-                    flash_packet[1] = cnt;
-                    flash_packet[2] = 0;
-                    flash_packet[3] = 0;
-                    
-                    send_packet.checksum = espcomm_calc_checksum((unsigned char *) &flash_packet[4], flash_packet[0]);
-                    res = espcomm_send_command(FLASH_DOWNLOAD_DATA, (unsigned char*) &flash_packet, flash_packet[0]+16, 0);
-                    
-                    if(res == 0)
-                    {
-						LOGWARN("espcomm_send_command(FLASH_DOWNLOAD_DATA) failed");
-                        res = espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) &flash_packet, 4, 0);
-                        fclose(f);
-                        espcomm_close();
-                        upload_stage = false;
-                        return 0;
-                    }
-                    
-                    cnt++;
-                    fdone += write_size;
-                    INFO(".");
-                    fflush(stdout);
-                }
-                upload_stage = false;
-                INFO("\n");
-            }
-            file_uploaded = 1;
-            fclose(f);
-            //espcomm_close();
-            return 1;
-        }
-        else
-        {
-            LOGERR("espcomm_open failed");
-        }
-            
-    }
-    else
+    if(stat(name, &st) != 0)
     {
         LOGERR("stat %s failed: %s", name, strerror(errno));
+        return false;
     }
-    return 0;
+
+    FILE* f = fopen(name, "rb");
+    if (!f)
+    {
+        LOGERR("failed to open file for reading");
+        return false;
+    }
+
+    uint8_t* file_contents = (uint8_t*) malloc(st.st_size);
+    if (!file_contents)
+    {
+        LOGERR("failed to allocate buffer for file contents");
+        fclose(f);
+        return false;
+    }
+
+    size_t cb = fread(file_contents, 1, st.st_size, f);
+    fclose(f);
+    free(file_contents);
+
+    if (cb != st.st_size)
+    {
+        LOGERR("failed to read file contents");
+        return false;
+    }
+
+    if (!espcomm_upload_mem(file_contents, st.st_size))
+    {
+        LOGERR("espcomm_upload_mem failed");
+        return false;
+    }
+
+    return true;
 }
 
 int espcomm_start_app(int reboot)
@@ -490,7 +563,7 @@ int espcomm_start_app(int reboot)
         LOGINFO("starting app without reboot");
         flash_packet[0] = 1;
     }
-    
+
     espcomm_send_command(FLASH_DOWNLOAD_DONE, (unsigned char*) &flash_packet, 4, 0);
     file_uploaded = 0;
 
@@ -557,4 +630,45 @@ int espcomm_set_chip(const char* name)
         return 0;
     }
     return 1;
+}
+
+bool espcomm_erase_flash()
+{
+    LOGDEBUG("espcomm_erase_flash");
+    if(!espcomm_open())
+    {
+        LOGERR("espcomm_open failed");
+        return false;
+    }
+
+    flash_packet[0] = 0;
+    flash_packet[1] = 0x00000200;
+    flash_packet[2] = BLOCKSIZE_FLASH;
+    flash_packet[3] = 0;
+    send_packet.checksum = espcomm_calc_checksum((unsigned char*) flash_packet, 16);
+    int res = espcomm_send_command(FLASH_DOWNLOAD_BEGIN, (unsigned char*) &flash_packet, 16, 1000);
+    if (res == 0)
+    {
+        LOGERR("espcomm_erase_flash: FLASH_DOWNLOAD_BEGIN failed");
+        return false;
+    }
+
+    ram_packet[0] = 0;
+    ram_packet[1] = 0x00000200;
+    ram_packet[2] = BLOCKSIZE_RAM;
+    ram_packet[3] = 0x40100000;
+
+    send_packet.checksum = espcomm_calc_checksum((unsigned char*) ram_packet, 16);
+    res = espcomm_send_command(RAM_DOWNLOAD_BEGIN, (unsigned char*) &ram_packet, 16, 0);
+    if (res == 0)
+    {
+        LOGERR("espcomm_erase_flash: RAM_DOWNLOAD_BEGIN failed");
+        return false;
+    }
+
+    ram_packet[0] = 0;
+    ram_packet[1] = 0x40004984;
+    send_packet.checksum = 0;
+    espcomm_send_command(RAM_DOWNLOAD_END, (unsigned char*) ram_packet, 8, 0);
+    return true;
 }

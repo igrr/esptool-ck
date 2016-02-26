@@ -34,7 +34,7 @@
 int argparse_commcmd(int num_args, char **arg_ptr)
 {
     char *cur_cmd;
-    
+
     if(arg_ptr[0][1] == 'c' && num_args--)
     {
         cur_cmd = &arg_ptr[0][2];
@@ -52,7 +52,7 @@ int argparse_commcmd(int num_args, char **arg_ptr)
                     return 2;
                 }
                 break;
-                
+
             case 'b':
                 if(num_args < 1)
                 {
@@ -74,7 +74,7 @@ int argparse_commcmd(int num_args, char **arg_ptr)
                     return 2;
                 }
                 break;
-                
+
             case 'f':
                 if(num_args < 1)
                 {
@@ -92,6 +92,12 @@ int argparse_commcmd(int num_args, char **arg_ptr)
                     return 0;
                 }
                 if (espcomm_set_board(arg_ptr[0]))
+                {
+                    return 2;
+                }
+
+            case 'e':
+                if (espcomm_erase_flash())
                 {
                     return 2;
                 }
