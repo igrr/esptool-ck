@@ -529,20 +529,22 @@ bool espcomm_upload_file(const char *name)
 
     size_t cb = fread(file_contents, 1, st.st_size, f);
     fclose(f);
-    free(file_contents);
 
     if (cb != st.st_size)
     {
         LOGERR("failed to read file contents");
+        free(file_contents);
         return false;
     }
 
     if (!espcomm_upload_mem(file_contents, st.st_size))
     {
         LOGERR("espcomm_upload_mem failed");
+        free(file_contents);
         return false;
     }
 
+    free(file_contents);
     return true;
 }
 
