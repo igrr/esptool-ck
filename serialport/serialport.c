@@ -310,7 +310,7 @@ void serialport_set_character_timeout_0_1s(unsigned int t)
 {
     if (t > 255)
         t = 255;
-
+#ifndef __APPLE__
     term.c_cc[VMIN]  = 0;
     term.c_cc[VTIME] = t;  // VTIME is measured in 0.1s
 
@@ -322,6 +322,7 @@ void serialport_set_character_timeout_0_1s(unsigned int t)
     }
     
     LOGDEBUG("done");
+#endif
     timeout = t;
 }
 
