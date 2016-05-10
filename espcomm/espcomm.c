@@ -397,6 +397,7 @@ bool espcomm_upload_mem(uint8_t* src, size_t size, const char* source_name)
 
     LOGDEBUG("writing flash");
     upload_stage = true;
+    size_t total_count = (size + BLOCKSIZE_FLASH - 1) / BLOCKSIZE_FLASH;
     size_t count = 0;
     while(size)
     {
@@ -426,10 +427,16 @@ bool espcomm_upload_mem(uint8_t* src, size_t size, const char* source_name)
 
         ++count;
         INFO(".");
+        if (count % 80 == 0) {
+            INFO(" [ %2d%% ]\n", count * 100 / total_count);
+        }
         fflush(stdout);
     }
     upload_stage = false;
-    INFO("\n");
+    while (++count % 80) {
+        INFO(" ");
+    }
+    INFO("  [ 100%% ]\n");
     file_uploaded = 1;
     return true;
 }
