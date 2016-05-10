@@ -674,3 +674,19 @@ bool espcomm_erase_flash()
     espcomm_send_command(RAM_DOWNLOAD_END, (unsigned char*) ram_packet, 8, 0);
     return true;
 }
+
+bool espcomm_reset()
+{
+    LOGDEBUG("espcomm_reset");
+    if (!espcomm_is_open) 
+    {
+        LOGDEBUG("espcomm_reset: opening port");
+        if (!serialport_open(espcomm_port, espcomm_baudrate))
+        {
+            LOGERR("espcomm_reset: failed to open port");
+            return false;
+        }
+    }
+    espcomm_reset_to_exec();
+    return true;
+}

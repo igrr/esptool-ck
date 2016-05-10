@@ -36,6 +36,7 @@ Argument | Description
 ```-ca <address>``` | Address in flash memory to upload the data to. This address is interpreted as hexadecimal. Default is 0x00000000.
 ```-cf <filename>``` | Upload the file to flash. Parameters that set the port, baud rate, and address must preceed the -cf command.
 ```-ce``` | Erase flash
+```-cr``` | Reset chip into app using the selected reset method
 ```-cc <chip>``` | Select chip to upload to. Currently supported values: `esp8266` (default), `esp32`
 
 Supported boards
