@@ -38,6 +38,8 @@
 #include "espcomm_boards.h"
 #include "delay.h"
 
+const int progress_line_width = 80;
+
 bootloader_packet send_packet;
 bootloader_packet receive_packet;
 
@@ -427,16 +429,18 @@ bool espcomm_upload_mem(uint8_t* src, size_t size, const char* source_name)
 
         ++count;
         INFO(".");
-        if (count % 80 == 0) {
+        if (count % progress_line_width == 0) {
             INFO(" [ %2d%% ]\n", count * 100 / total_count);
         }
         fflush(stdout);
     }
-    upload_stage = false;
-    while (++count % 80) {
-        INFO(" ");
+    if (count % progress_line_width) {
+        while (++count % progress_line_width) {
+            INFO(" ");
+        }
+        INFO("  [ 100%% ]\n");
     }
-    INFO("  [ 100%% ]\n");
+    upload_stage = false;
     file_uploaded = 1;
     return true;
 }
