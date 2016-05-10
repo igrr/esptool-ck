@@ -376,7 +376,7 @@ int espcomm_start_flash(uint32_t size, uint32_t address)
     return res;
 }
 
-bool espcomm_upload_mem(uint8_t* src, size_t size)
+bool espcomm_upload_mem(uint8_t* src, size_t size, const char* source_name)
 {
     LOGDEBUG("espcomm_upload_mem");
     if(!espcomm_open())
@@ -385,7 +385,7 @@ bool espcomm_upload_mem(uint8_t* src, size_t size)
         return false;
     }
 
-    INFO("Uploading %i bytes from to flash at 0x%08X\n", size, espcomm_address);
+    INFO("Uploading %i bytes from %s to flash at 0x%08X\n", size, source_name, espcomm_address);
     LOGDEBUG("erasing flash");
     int res = espcomm_start_flash(size, espcomm_address);
     if (res == 0)
@@ -436,7 +436,7 @@ bool espcomm_upload_mem(uint8_t* src, size_t size)
 
 bool espcomm_upload_mem_to_RAM(uint8_t* src, size_t size, int address, int entry)
 {
-    LOGDEBUG("espcomm_upload_mem");
+    LOGDEBUG("espcomm_upload_mem_to_RAM");
     if(!espcomm_open())
     {
         LOGERR("espcomm_open failed");
@@ -537,7 +537,7 @@ bool espcomm_upload_file(const char *name)
         return false;
     }
 
-    if (!espcomm_upload_mem(file_contents, st.st_size))
+    if (!espcomm_upload_mem(file_contents, st.st_size, name))
     {
         LOGERR("espcomm_upload_mem failed");
         free(file_contents);

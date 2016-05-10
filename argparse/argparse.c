@@ -148,6 +148,10 @@ int parse_arg(int num_args, char **arg_ptr)
                 return 1;
                 break;
 
+            case 'q':
+                return 1;
+                break;
+
             case '?':
             case 'h':
             	print_help();

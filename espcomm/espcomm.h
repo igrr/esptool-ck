@@ -74,7 +74,7 @@ int espcomm_open(void);
 void espcomm_close(void);
 
 bool espcomm_upload_mem_to_RAM(uint8_t* src, size_t size, int address, int entry);
-bool espcomm_upload_mem(uint8_t* src, size_t size);
+bool espcomm_upload_mem(uint8_t* src, size_t sizev, const char* source_name);
 bool espcomm_upload_file(const char *name);
 bool espcomm_upload_file_compressed(const char* name);
 int espcomm_file_uploaded();
