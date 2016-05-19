@@ -1,0 +1,5 @@
+TARGET		= esptool
+
+INSTALLDIR_BIN	= /usr/local/bin
+TARGET_FLAGS	= 
+TARGET_CFLAGS	=

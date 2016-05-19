@@ -26,6 +26,10 @@ else
         TARGET_OS := OSX
         DIST_SUFFIX := osx
     endif
+    ifeq ($(UNAME_S),FreeBSD)
+        TARGET_OS := FREEBSD
+        DIST_SUFFIX := freebsd
+    endif
     ARCHIVE_CMD := tar czf
     ARCHIVE_EXTENSION := tar.gz
 endif
