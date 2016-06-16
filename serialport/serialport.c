@@ -306,38 +306,11 @@ void serialport_set_baudrate(unsigned int baudrate)
     }
 }
 
-void serialport_set_character_timeout_0_1s(unsigned int t)
-{
-    if (t > 255)
-        t = 255;
-#ifndef __APPLE__
-    term.c_cc[VMIN]  = 0;
-    term.c_cc[VTIME] = t;  // VTIME is measured in 0.1s
-
-    LOGDEBUG("setting character timeout %i", t);
-    
-    if (tcsetattr(serial_port, TCSANOW, &term)!=0)
-    {
-        LOGDEBUG("set timeout failed");
-    }
-    
-    LOGDEBUG("done");
-#endif
-    timeout = t;
-}
-
-unsigned serialport_get_character_timeout_0_1s()
-{
-    return term.c_cc[VTIME];
-}
-
-
 void serialport_set_timeout(unsigned int t)
 {
     if(t != timeout)
     {
         LOGDEBUG("setting timeout %i", t);
-        serialport_set_character_timeout_0_1s((t + 99)/100);
         timeout = t;
     }
 }
@@ -346,7 +319,6 @@ unsigned serialport_get_timeout()
 {
     return timeout;
 }
-
 
 int serialport_open(const char *device, unsigned int baudrate)
 {
@@ -445,17 +417,11 @@ unsigned serialport_write(const unsigned char* data, unsigned int size)
 void serialport_flush(void)
 {
     static unsigned char b;
-    unsigned int t;
     
     if(serial_port)
     {
-        t = serialport_get_character_timeout_0_1s();
-        serialport_set_character_timeout_0_1s(0);
-        
         tcdrain(serial_port);
         while(read(serial_port, &b, 1) > 0);
-       
-        serialport_set_character_timeout_0_1s(t);
     }
 }
 
