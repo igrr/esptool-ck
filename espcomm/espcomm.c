@@ -235,11 +235,11 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
 static int espcomm_sync(void)
 {
     sync_stage = true;
-    for (int retry_boot = 0; retry_boot < 3; ++retry_boot)
+    for (int retry_boot = 0; retry_boot < 10; ++retry_boot)
     {
         LOGINFO("resetting board");
         espcomm_enter_boot();
-        for (int retry_sync = 0; retry_sync < 3; ++retry_sync)
+        for (int retry_sync = 0; retry_sync < 10; ++retry_sync)
         {
             LOGINFO("trying to connect");
             espcomm_delay_ms(100);
@@ -689,7 +689,7 @@ bool espcomm_erase_flash()
 bool espcomm_reset()
 {
     LOGDEBUG("espcomm_reset");
-    if (!espcomm_is_open) 
+    if (!espcomm_is_open)
     {
         LOGDEBUG("espcomm_reset: opening port");
         if (!serialport_open(espcomm_port, espcomm_baudrate))
