@@ -239,7 +239,7 @@ static int espcomm_sync(void)
     {
         LOGINFO("resetting board");
         espcomm_enter_boot();
-        for (int retry_sync = 0; retry_sync < 10; ++retry_sync)
+        for (int retry_sync = 0; retry_sync < 3; ++retry_sync)
         {
             LOGINFO("trying to connect");
             espcomm_delay_ms(100);
