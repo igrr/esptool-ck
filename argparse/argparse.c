@@ -78,7 +78,13 @@ they are given.\n\
     same order as the -bs commands are executed.\n\
 \n\
 -bp <size>\n\
-    Pad last written section of firmware image to the given size, in bytes.\n\
+    Finalize the firmware image, padding it with '0xaa' value until it is at least\n\
+    <size> bytes long. Unlike -bc, this doesn't close the file.\n\
+    This option can be used to combine bootloader with the rest of the application\n\
+\n\
+-br <size>\n\
+    Pad all the following sections to multiples of <size>. Default is 4 bytes.\n\
+    This option can be used to place sections on specific boundaries, e.g. 4k or 64k.\n\
 \n\
 -bc\n\
     Close the firmware image and save the result as file to disk.\n\

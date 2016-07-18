@@ -26,7 +26,8 @@ Argument | Description
 ```-bz <512K|256K|1M|2M|4M|8M|16M|32M>``` | Set the flash chip size. Default is 512K.
 ```-bf <40|26|20|80>``` | Set the flash chip frequency, in MHz. Default is 40M.
 ```-bs <section>``` | Read the specified section from the ELF file and append it to the firmware image. Sections will appear in the firmware image in the exact same order as the -bs commands are executed.
-```-bp <size>``` | Pad last written section of firmware image to the given size, in bytes.
+```-bp <size>``` | Finalize the firmware image, padding it with `0xaa` value until it is at least `<size>` bytes long. Unlike `-bc`, this doesn't close the file. This option can be used to combine bootloader with the rest of the application
+```-br <size>``` | Pad all the following sections to multiples of `<size>`. Default is 4 bytes. This option can be used to place sections on specific boundaries, e.g. 4k or 64k.
 ```-bc``` | Close the firmware image and save the result as file to disk.
 ```-v``` | Increase verbosity level of the tool. Add more v's to increase it even more, e.g. -vv, -vvv.
 ```-q``` | Disable most of the output.

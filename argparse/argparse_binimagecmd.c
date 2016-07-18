@@ -30,6 +30,8 @@
 #include "esptool_elf_object.h"
 #include "esptool_binimage.h"
 
+static unsigned section_pad_size = 4;
+
 static int argparse_binimagecmd_add_segment(const char *sname, uint32_t padsize)
 {
     uint32_t snum;
@@ -93,7 +95,7 @@ int argparse_binimagecmd(int num_args, char **arg_ptr)
                 {
                     return 0;
                 }
-                if(argparse_binimagecmd_add_segment(arg_ptr[0], 4))
+                if(argparse_binimagecmd_add_segment(arg_ptr[0], section_pad_size))
                 {
                     bimage_set_entry(get_elf_entry());
                     return 2;
@@ -118,6 +120,14 @@ int argparse_binimagecmd(int num_args, char **arg_ptr)
                     return 2;
                 }
                 break;
+
+            case 'r':
+                if(num_args < 1)
+                {
+                    return 0;
+                }
+                section_pad_size = (unsigned) atoi(arg_ptr[0]);    
+                return 2;
 
             case 'm':
                 if (num_args < 1)
