@@ -11,7 +11,7 @@ matrix:
 
 build_script:
     - SET PATH=C:\MinGW\bin;C:\MinGW\msys\1.0\bin;%PATH%
-    - make all
+    - make all CC=gcc
     - for /f %%i in ('git describe --always') do set PRODUCT_VERSION=%%i
     - SET PRODUCT_NAME=esptool-%PRODUCT_VERSION%
     - SET PLATFORM_NAME=win32
