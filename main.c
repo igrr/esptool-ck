@@ -59,6 +59,7 @@ int main(int argc, char **argv)
         num_args_parsed = parse_arg(num_args, arg_ptr);
         if(num_args_parsed == 0)
         {
+            LOGERR("Invalid argument or value after %s (argument #%d)", arg_ptr[0], arg_ptr - argv + 1);
             goto EXITERROR;
         }
 
@@ -77,5 +78,5 @@ int main(int argc, char **argv)
 EXITERROR:
     close_elf_object();
     binimage_write_close(16);
-    return -1;
+    return 2;
 }
