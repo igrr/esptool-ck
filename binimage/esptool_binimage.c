@@ -29,6 +29,8 @@
 #include "infohelper.h"
 #include "esptool_binimage.h"
 
+typedef enum { HL_ESP8266, HL_ESP32BOOT, HL_ESP32 } binimage_header_layout_t;
+
 static bin_image b_image = {
  .magic             = 0xe9,
  .num_segments      = 0,
@@ -36,7 +38,9 @@ static bin_image b_image = {
  .flash_size_freq   = FLASH_SIZE_512K | FLASH_FREQ_40
 };
 
-unsigned int total_size = 0;
+static unsigned int total_size = 0;
+static binimage_header_layout_t header_layout = HL_ESP8266;
+
 
 int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
 {
@@ -139,6 +143,22 @@ int binimage_write(uint32_t padsize, bool close)
     }
     
     total_size = 8;
+
+    if (header_layout == HL_ESP32BOOT)
+    {
+        LOGDEBUG("adding extra header for ESP32 boot image");
+        uint8_t extra_header[16];
+        // TODO: replace this dummy 16 byte array with the actual flash_extN_config_hdr structures
+        memset(extra_header, 0, sizeof(extra_header));
+        if(fwrite(extra_header, 1, sizeof(extra_header), b_image.image_file) != sizeof(extra_header))
+        {
+            LOGERR("cant write extra header to binimage file, aborting");
+            fclose(b_image.image_file);
+            b_image.image_file = 0;
+            return 0;
+        }
+        total_size += sizeof(extra_header);        
+    }
     
     for(cnt = 0; cnt < b_image.num_segments; cnt++)
     {
@@ -375,5 +395,23 @@ const char* binimage_flash_freq_to_str(unsigned char freq)
         case FLASH_FREQ_80: return "80";
         default: return "";
     }
+}
+
+int binimage_set_header_layout(const char* layout)
+{
+    LOGDEBUG("setting header layout to %s", layout);
+    if (strcasecmp(layout, "esp32boot") == 0) {
+        header_layout = HL_ESP32BOOT;
+        return 1;
+    }
+    else if (strcasecmp(layout, "esp8266") == 0) {
+        header_layout = HL_ESP8266;
+        return 1;
+    }
+    else if (strcasecmp(layout, "esp32")) {
+        header_layout = HL_ESP32;
+    }
+    LOGERR("invalid image header layout: %s", layout);
+    return 0;
 }
 
