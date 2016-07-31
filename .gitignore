@@ -1,3 +1,4 @@
 esptool
 esptool.exe
 build/
+*.o
