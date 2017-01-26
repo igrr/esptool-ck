@@ -371,9 +371,10 @@ int espcomm_start_flash(uint32_t size, uint32_t address)
 
     send_packet.checksum = espcomm_calc_checksum((unsigned char*) flash_packet, 16);
 
-    // int timeout_ms = size / erase_block_size * delay_per_erase_block_ms + 250;
-    int timeout_ms = 15000;
-    // LOGDEBUG("calculated erase delay: %dms", timeout_ms);
+    int delay_per_erase_block_ms = 7;
+    int timeout_ms = erase_size / BLOCKSIZE_FLASH * delay_per_erase_block_ms + 5000;
+    if (timeout_ms < 15000) timeout_ms = 15000;
+    //LOGDEBUG("calculated erase delay: %dms = max(%db / %db * %dms + 5000, 15000)", timeout_ms, erase_size, BLOCKSIZE_FLASH, delay_per_erase_block_ms);
     res = espcomm_send_command(FLASH_DOWNLOAD_BEGIN, (unsigned char*) &flash_packet, 16, timeout_ms);
     return res;
 }
