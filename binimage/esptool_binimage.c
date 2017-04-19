@@ -49,7 +49,7 @@ int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
         LOGERR("no data for binimage segment #%i", b_image.num_segments);
         return 0;
     }
-    
+
     if(b_image.segments == 0)
     {
         b_image.segments = malloc(size);
@@ -79,7 +79,7 @@ int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data)
             b_image.num_segments,
             b_image.segments[b_image.num_segments].address,
             b_image.segments[b_image.num_segments].size);
-    
+
     b_image.num_segments++;
     return 1;
 }
@@ -90,9 +90,9 @@ int binimage_prepare(const char *fname, uint32_t entry)
     {
         return 0;
     }
-    
-    b_image.entry = entry;    
-    
+
+    b_image.entry = entry;
+
     if(fname[0])
     {
         b_image.image_file = fopen(fname, "wb");
@@ -106,13 +106,13 @@ int binimage_prepare(const char *fname, uint32_t entry)
     {
         return 0;
     }
-    
+
     b_image.segments = 0;
     b_image.num_segments = 0;
     total_size = 0;
-    
+
     LOGINFO("created structure for binimage \"%s\" with entry address 0x%08X", fname, b_image.entry);
-    
+
     return 1;
 }
 
@@ -126,14 +126,14 @@ int binimage_write(uint32_t padsize, bool close)
 {
     unsigned int cnt, cnt2;
     unsigned char chksum;
-    
+
     chksum = 0xEF;
-    
+
     if(b_image.image_file == 0)
     {
         return 0;
     }
-    
+
     if(fwrite((unsigned char*)&b_image, 1, 8, b_image.image_file) != 8)
     {
         LOGERR("cant write main header to binimage file, aborting");
@@ -141,7 +141,7 @@ int binimage_write(uint32_t padsize, bool close)
         b_image.image_file = 0;
         return 0;
     }
-    
+
     total_size = 8;
 
     if (header_layout == HL_ESP32BOOT)
@@ -157,9 +157,9 @@ int binimage_write(uint32_t padsize, bool close)
             b_image.image_file = 0;
             return 0;
         }
-        total_size += sizeof(extra_header);        
+        total_size += sizeof(extra_header);
     }
-    
+
     for(cnt = 0; cnt < b_image.num_segments; cnt++)
     {
         if(fwrite((unsigned char*)&b_image.segments[cnt], 1, 8, b_image.image_file) != 8)
@@ -169,9 +169,9 @@ int binimage_write(uint32_t padsize, bool close)
             b_image.image_file = 0;
             return 0;
         }
-        
+
         total_size += 8;
-        
+
         if(fwrite(b_image.segments[cnt].data, 1, b_image.segments[cnt].size, b_image.image_file) != b_image.segments[cnt].size)
         {
             LOGERR("cant write data block for segment  #%i to binimage file, aborting", cnt);
@@ -179,16 +179,16 @@ int binimage_write(uint32_t padsize, bool close)
             b_image.image_file = 0;
             return 0;
         }
-        
+
         total_size += b_image.segments[cnt].size;
         for(cnt2 = 0; cnt2 < b_image.segments[cnt].size; cnt2++)
         {
             chksum ^= b_image.segments[cnt].data[cnt2];
         }
     }
-    
+
     padsize--;
-    
+
     while(++total_size & padsize)
     {
         if(fputc(0x00, b_image.image_file) == EOF)
@@ -200,7 +200,7 @@ int binimage_write(uint32_t padsize, bool close)
         }
         cnt++;
     }
-    
+
     if(fputc(chksum, b_image.image_file) == EOF)
     {
         LOGERR("cant write checksum byte 0x%02X at 0x%08X to binimage file, aborting", chksum, total_size);
@@ -210,13 +210,13 @@ int binimage_write(uint32_t padsize, bool close)
     }
 
     LOGINFO("saved binimage file, total size is %i bytes, checksum byte is 0x%02X", total_size, chksum);
-    
-    if (close) 
+
+    if (close)
     {
         fclose(b_image.image_file);
         b_image.image_file = 0;
     }
-    
+
     if(b_image.segments)
     {
         for(cnt = 0; cnt < b_image.num_segments; cnt++)
@@ -250,13 +250,13 @@ int binimage_write_padto(uint32_t padsize, uint32_t address)
         return 0;
 
     LOGDEBUG("binimage_write_padto: total:%x addr:%x", total_size, address);
-    if (address < total_size) 
+    if (address < total_size)
     {
         LOGERR("binimage_write_padto: address is less than size written");
         return 0;
     }
 
-    while (total_size < address) 
+    while (total_size < address)
     {
         if (fputc(0xaa, b_image.image_file) == EOF)
             return 0;
@@ -286,7 +286,7 @@ int binimage_set_flash_mode(const char* modestr)
         return 0;
     }
 
-    LOGINFO("setting flash mode from %s to %s", 
+    LOGINFO("setting flash mode from %s to %s",
             binimage_flash_mode_to_str(b_image.flash_mode),
             binimage_flash_mode_to_str(mode));
 
@@ -303,10 +303,10 @@ int binimage_set_flash_size(const char* sizestr)
         return 0;
     }
 
-    LOGINFO("setting flash size from %s to %s", 
+    LOGINFO("setting flash size from %s to %s",
             binimage_flash_size_to_str(b_image.flash_size_freq & 0xf0),
             binimage_flash_size_to_str(size));
-    
+
     b_image.flash_size_freq = size | (b_image.flash_size_freq & 0x0f);
     return 1;
 }
@@ -320,23 +320,23 @@ int binimage_set_flash_freq(const char* freqstr)
         return 0;
     }
 
-    LOGINFO("setting flash frequency from %s to %s", 
+    LOGINFO("setting flash frequency from %s to %s",
             binimage_flash_freq_to_str(b_image.flash_size_freq & 0x0f),
             binimage_flash_freq_to_str(freq));
-    
+
     b_image.flash_size_freq = (b_image.flash_size_freq & 0xf0) | freq;
     return 1;
 }
 
 static const char* flash_mode_str[] = {"qio", "qout", "dio", "dout"};
-static const char* flash_size_str[] = {"512K", "256K", "1M", "2M", "4M", "8M", "16M", "32M"};
+static const char* flash_size_str[] = {"512K", "256K", "1M", "2M", "4M","XM","XM","XM", "8M", "16M"};
 
 unsigned char binimage_parse_flash_mode(const char* str)
 {
     const int n = sizeof(flash_mode_str)/sizeof(const char*);
-    for (int i = 0; i < n; ++i) 
+    for (int i = 0; i < n; ++i)
     {
-        if (strcasecmp(str, flash_mode_str[i]) == 0) 
+        if (strcasecmp(str, flash_mode_str[i]) == 0)
         {
             return (unsigned char) i;
         }
@@ -347,9 +347,9 @@ unsigned char binimage_parse_flash_mode(const char* str)
 unsigned char binimage_parse_flash_size(const char* str)
 {
     const int n = sizeof(flash_size_str)/sizeof(const char*);
-    for (int i = 0; i < n; ++i) 
+    for (int i = 0; i < n; ++i)
     {
-        if (strcasecmp(str, flash_size_str[i]) == 0) 
+        if (strcasecmp(str, flash_size_str[i]) == 0)
         {
             return (unsigned char) i << 4;
         }
@@ -360,7 +360,7 @@ unsigned char binimage_parse_flash_size(const char* str)
 unsigned char binimage_parse_flash_freq(const char* str)
 {
     int val = atoi(str);
-    switch (val) 
+    switch (val)
     {
         case 40: return FLASH_FREQ_40;
         case 26: return FLASH_FREQ_26;
@@ -380,7 +380,7 @@ const char* binimage_flash_mode_to_str(unsigned char mode)
 
 const char* binimage_flash_size_to_str(unsigned char size)
 {
-    if ((size >> 4) > FLASH_SIZE_32M)
+    if ((size >> 4) > FLASH_SIZE_16M)
         return "";
     return flash_size_str[size >> 4];
 }
@@ -414,4 +414,3 @@ int binimage_set_header_layout(const char* layout)
     LOGERR("invalid image header layout: %s", layout);
     return 0;
 }
-
