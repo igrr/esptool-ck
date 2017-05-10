@@ -73,10 +73,6 @@ static uint32_t ram_packet[BLOCKSIZE_RAM+32];
 
 static int file_uploaded = 0;
 
-typedef enum {ESPCOMM_8266, ESPCOMM_32} espcomm_chip_t;
-
-static espcomm_chip_t s_chip = ESPCOMM_8266;
-
 static void espcomm_enter_boot(void)
 {
     espcomm_board_reset_into_bootloader(espcomm_board);
@@ -319,48 +315,33 @@ int espcomm_start_flash(uint32_t size, uint32_t address)
     uint32_t res;
 
     LOGDEBUG("size: %06x address: %06x", size, address);
-    int erase_size;
 
-    if (s_chip == ESPCOMM_8266)
-    {
-        const int sector_size = 4096;
-        const int sectors_per_block  = 16;
-        const int first_sector_index = address / sector_size;
-        LOGDEBUG("first_sector_index: %d", first_sector_index);
+    const int sector_size = 4096;
+    const int sectors_per_block  = 16;
+    const int first_sector_index = address / sector_size;
+    LOGDEBUG("first_sector_index: %d", first_sector_index);
 
-        const int total_sector_count = ((size % sector_size) == 0) ?
-                                        (size / sector_size) : (size / sector_size + 1);
-        LOGDEBUG("total_sector_count: %d", total_sector_count);
+    const int total_sector_count = ((size % sector_size) == 0) ?
+                                    (size / sector_size) : (size / sector_size + 1);
+    LOGDEBUG("total_sector_count: %d", total_sector_count);
 
-        const int max_head_sector_count  = sectors_per_block - (first_sector_index % sectors_per_block);
-        const int head_sector_count = (max_head_sector_count > total_sector_count) ?
-                                        total_sector_count : max_head_sector_count;
-        LOGDEBUG("head_sector_count: %d", head_sector_count);
+    const int max_head_sector_count  = sectors_per_block - (first_sector_index % sectors_per_block);
+    const int head_sector_count = (max_head_sector_count > total_sector_count) ?
+                                    total_sector_count : max_head_sector_count;
+    LOGDEBUG("head_sector_count: %d", head_sector_count);
 
-        // SPIEraseArea function in the esp8266 ROM has a bug which causes extra area to be erased.
-        // If the address range to be erased crosses the block boundary,
-        // then extra head_sector_count sectors are erased.
-        // If the address range doesn't cross the block boundary,
-        // then extra total_sector_count sectors are erased.
+    // SPIEraseArea function in the esp8266 ROM has a bug which causes extra area to be erased.
+    // If the address range to be erased crosses the block boundary,
+    // then extra head_sector_count sectors are erased.
+    // If the address range doesn't cross the block boundary,
+    // then extra total_sector_count sectors are erased.
 
-        const int adjusted_sector_count = (total_sector_count > 2 * head_sector_count) ?
-                                          (total_sector_count - head_sector_count):
-                                          (total_sector_count + 1) / 2;
-        LOGDEBUG("adjusted_sector_count: %d", adjusted_sector_count);
+    const int adjusted_sector_count = (total_sector_count > 2 * head_sector_count) ?
+                                      (total_sector_count - head_sector_count):
+                                      (total_sector_count + 1) / 2;
+    LOGDEBUG("adjusted_sector_count: %d", adjusted_sector_count);
 
-        erase_size = adjusted_sector_count * sector_size;
-    }
-    else {
-        erase_size = size;
-
-        res = espcomm_set_flash_params(0, (128/8)*1024*1024, 64*1024, 4*1024, 256, 0xffff);
-        if (res == 0)
-        {
-            LOGWARN("espcomm_send_command(SET_FLASH_PARAMS) failed");
-            return res;
-        }
-    }
-
+    uint32_t erase_size = adjusted_sector_count * sector_size;
 
     LOGDEBUG("erase_size: %06x", erase_size);
 
@@ -626,22 +607,6 @@ int espcomm_set_board(const char* name)
             INFO("%s ", espcomm_board_name(b));
         }
         INFO("\n");
-    }
-    return 1;
-}
-
-int espcomm_set_chip(const char* name)
-{
-    LOGDEBUG("setting chip to %s", name);
-    if (strcmp(name, "esp8266") == 0 || strcmp(name, "8266") == 0) {
-        s_chip = ESPCOMM_8266;
-    }
-    else if (strcmp(name, "esp32") == 0 || strcmp(name, "32") == 0) {
-        s_chip = ESPCOMM_32;
-    }
-    else {
-        LOGERR("unknown chip: %s", name);
-        return 0;
     }
     return 1;
 }
