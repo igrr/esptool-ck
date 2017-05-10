@@ -136,6 +136,6 @@ int binimage_add_segment(uint32_t address, uint32_t size, unsigned char *data);
 int binimage_set_flash_mode(const char* mode);
 int binimage_set_flash_size(const char* size);
 int binimage_set_flash_freq(const char* freq);
-int binimage_set_header_layout(const char* layout);
+
 
 #endif

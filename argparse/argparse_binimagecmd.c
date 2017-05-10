@@ -161,17 +161,6 @@ int argparse_binimagecmd(int num_args, char **arg_ptr)
                     return 0;
                 }
                 return 2;
-
-            case 'l':
-                if (num_args < 1)
-                {
-                    return 0;
-                }
-                if (binimage_set_header_layout(arg_ptr[0]) == 0)
-                {
-                    return 0;
-                }
-                return 2;
                 
             default:
                 return 0;
