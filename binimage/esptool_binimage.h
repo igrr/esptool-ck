@@ -56,7 +56,7 @@ typedef struct {
     /* SPI Flash Interface (0 = QIO, 1 = QOUT, 2 = DIO, 0x3 = DOUT) */
     unsigned char       flash_mode;
 
-    /* High four bits: 0 = 512K, 1 = 256K, 2 = 1M, 3 = 2M, 4 = 4M, 
+    /* High four bits: 0 = 512K, 1 = 256K, 2 = 1M, 3 = 2M, 4 = 4M, 8 = 8M, 9 = 16M
        Low four bits:  0 = 40MHz, 1= 26MHz, 2 = 20MHz, 0xf = 80MHz */
     unsigned char		flash_size_freq;
 
@@ -75,9 +75,8 @@ typedef struct {
 #define FLASH_SIZE_1M   2 << 4
 #define FLASH_SIZE_2M   3 << 4
 #define FLASH_SIZE_4M   4 << 4
-#define FLASH_SIZE_8M   5 << 4
-#define FLASH_SIZE_16M  6 << 4
-#define FLASH_SIZE_32M  7 << 4
+#define FLASH_SIZE_8M   8 << 4
+#define FLASH_SIZE_16M  9 << 4
 
 // flash frequency in MHz
 #define FLASH_FREQ_40   0x0

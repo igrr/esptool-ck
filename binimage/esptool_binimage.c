@@ -309,14 +309,14 @@ int binimage_set_flash_freq(const char* freqstr)
 }
 
 static const char* flash_mode_str[] = {"qio", "qout", "dio", "dout"};
-static const char* flash_size_str[] = {"512K", "256K", "1M", "2M", "4M", "8M", "16M", "32M"};
+static const char* flash_size_str[] = {"512K", "256K", "1M", "2M", "4M", NULL, NULL, NULL, "8M", "16M"};
 
 unsigned char binimage_parse_flash_mode(const char* str)
 {
     const int n = sizeof(flash_mode_str)/sizeof(const char*);
     for (int i = 0; i < n; ++i) 
     {
-        if (strcasecmp(str, flash_mode_str[i]) == 0) 
+        if (flash_mode_str[i] && strcasecmp(str, flash_mode_str[i]) == 0) 
         {
             return (unsigned char) i;
         }
@@ -329,7 +329,7 @@ unsigned char binimage_parse_flash_size(const char* str)
     const int n = sizeof(flash_size_str)/sizeof(const char*);
     for (int i = 0; i < n; ++i) 
     {
-        if (strcasecmp(str, flash_size_str[i]) == 0) 
+        if (flash_size_str[i] && strcasecmp(str, flash_size_str[i]) == 0) 
         {
             return (unsigned char) i << 4;
         }
@@ -360,9 +360,10 @@ const char* binimage_flash_mode_to_str(unsigned char mode)
 
 const char* binimage_flash_size_to_str(unsigned char size)
 {
-    if ((size >> 4) > FLASH_SIZE_32M)
+    int index = size >> 4;
+    if (index > FLASH_SIZE_16M || flash_size_str[index] == NULL)
         return "";
-    return flash_size_str[size >> 4];
+    return flash_size_str[index];
 }
 
 const char* binimage_flash_freq_to_str(unsigned char freq)
