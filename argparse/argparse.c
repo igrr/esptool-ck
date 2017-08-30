@@ -4,7 +4,7 @@
  ***    argparse.c
  ***    - simple parser for command line arguments
  ***      checks which command submodule an argument is for and then dispatches
- ***      processing to the apropriate parser
+ ***      processing to the appropriate parser
  ***
  ***    Copyright (C) 2014 Christian Klippel <ck@atelier-klippel.de>
  ***
@@ -113,7 +113,7 @@ they are given.\n\
 \n\
 -cf <filename>\n\
     Upload the file to flash. Parameters that set the port, baud rate, and address\n\
-    must preceed the -cf command.\n\
+    must precede the -cf command.\n\
 \n\
 -cr\n\
     Reset chip into app using the selected reset method.\n\

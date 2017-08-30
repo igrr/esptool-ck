@@ -173,7 +173,7 @@ static uint32_t espcomm_send_command(unsigned char command, unsigned char *data,
 
                 if(serialport_receive_slip(receive_packet.data, receive_packet.size) == 0)
                 {
-                    LOGWARN("espcomm_send_command: cant receive slip payload data");
+                    LOGWARN("espcomm_send_command: can't receive slip payload data");
                     return 0;
                 }
                 else

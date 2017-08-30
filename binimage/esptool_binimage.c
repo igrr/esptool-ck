@@ -98,7 +98,7 @@ int binimage_prepare(const char *fname, uint32_t entry)
         b_image.image_file = fopen(fname, "wb");
         if(b_image.image_file == NULL)
         {
-            LOGERR("cant open binimage file \"%s\" for writing, aborting", fname);
+            LOGERR("can't open binimage file \"%s\" for writing, aborting", fname);
             return 0;
         }
     }
@@ -136,7 +136,7 @@ int binimage_write(uint32_t padsize, bool close)
     
     if(fwrite((unsigned char*)&b_image, 1, 8, b_image.image_file) != 8)
     {
-        LOGERR("cant write main header to binimage file, aborting");
+        LOGERR("can't write main header to binimage file, aborting");
         fclose(b_image.image_file);
         b_image.image_file = 0;
         return 0;
@@ -152,7 +152,7 @@ int binimage_write(uint32_t padsize, bool close)
         memset(extra_header, 0, sizeof(extra_header));
         if(fwrite(extra_header, 1, sizeof(extra_header), b_image.image_file) != sizeof(extra_header))
         {
-            LOGERR("cant write extra header to binimage file, aborting");
+            LOGERR("can't write extra header to binimage file, aborting");
             fclose(b_image.image_file);
             b_image.image_file = 0;
             return 0;
@@ -164,7 +164,7 @@ int binimage_write(uint32_t padsize, bool close)
     {
         if(fwrite((unsigned char*)&b_image.segments[cnt], 1, 8, b_image.image_file) != 8)
         {
-            LOGERR("cant write header for segment  #%i to binimage file, aborting", cnt);
+            LOGERR("can't write header for segment  #%i to binimage file, aborting", cnt);
             fclose(b_image.image_file);
             b_image.image_file = 0;
             return 0;
@@ -174,7 +174,7 @@ int binimage_write(uint32_t padsize, bool close)
         
         if(fwrite(b_image.segments[cnt].data, 1, b_image.segments[cnt].size, b_image.image_file) != b_image.segments[cnt].size)
         {
-            LOGERR("cant write data block for segment  #%i to binimage file, aborting", cnt);
+            LOGERR("can't write data block for segment  #%i to binimage file, aborting", cnt);
             fclose(b_image.image_file);
             b_image.image_file = 0;
             return 0;
@@ -193,7 +193,7 @@ int binimage_write(uint32_t padsize, bool close)
     {
         if(fputc(0x00, b_image.image_file) == EOF)
         {
-            LOGERR("cant write padding byte 0x00 at 0x%08X to binimage file, aborting", total_size);
+            LOGERR("can't write padding byte 0x00 at 0x%08X to binimage file, aborting", total_size);
             fclose(b_image.image_file);
             b_image.image_file = 0;
             return 0;
@@ -203,7 +203,7 @@ int binimage_write(uint32_t padsize, bool close)
     
     if(fputc(chksum, b_image.image_file) == EOF)
     {
-        LOGERR("cant write checksum byte 0x%02X at 0x%08X to binimage file, aborting", chksum, total_size);
+        LOGERR("can't write checksum byte 0x%02X at 0x%08X to binimage file, aborting", chksum, total_size);
         fclose(b_image.image_file);
         b_image.image_file = 0;
         return 0;

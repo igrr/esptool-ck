@@ -113,7 +113,7 @@ int save_elf_section_bindata(const char *secname, const char *fname);
 Elf32_Word get_elf_section_size(Elf32_Half secnum);
 
 /*
-** retrieve the memory addres as specified in the ELF cache object of the binary data for a section
+** retrieve the memory address as specified in the ELF cache object of the binary data for a section
 ** secnum: index position of the section
 */
 Elf32_Word get_elf_section_addr(Elf32_Half secnum);
