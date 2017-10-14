@@ -57,9 +57,14 @@ int main(int argc, char **argv)
     while(num_args)
     {
         num_args_parsed = parse_arg(num_args, arg_ptr);
-        if(num_args_parsed == 0)
+        if (num_args_parsed == 0)
         {
             LOGERR("Invalid argument or value after %s (argument #%d)", arg_ptr[0], arg_ptr - argv + 1);
+            goto EXITERROR;
+        }
+        else if (num_args_parsed < 0)
+        {
+            /* Command failed, error is printed by the command */
             goto EXITERROR;
         }
 

@@ -95,24 +95,27 @@ int argparse_commcmd(int num_args, char **arg_ptr)
                 {
                     return 2;
                 }
+                break;
 
             case 'e':
                 if (espcomm_erase_flash())
                 {
                     return 2;
                 }
+                break;
 
             case 'r':
                 if (espcomm_reset())
                 {
                     return 1;
                 }
-                return 0;
+                break;
 
             default:
                 return 0;
                 break;
         }
     }
-    return 0;
+    /* Catch-all for errors returned by commands */
+    return -1;
 }

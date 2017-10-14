@@ -631,6 +631,7 @@ int espcomm_set_board(const char* name)
             INFO("%s ", espcomm_board_name(b));
         }
         INFO("\n");
+        return 0;
     }
     return 1;
 }

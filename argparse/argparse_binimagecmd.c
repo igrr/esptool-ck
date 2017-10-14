@@ -134,38 +134,39 @@ int argparse_binimagecmd(int num_args, char **arg_ptr)
                 {
                     return 0;
                 }
-                if (binimage_set_flash_mode(arg_ptr[0]) == 0)
+                if (binimage_set_flash_mode(arg_ptr[0]))
                 {
-                    return 0;
+                    return 2;
                 }
-                return 2;
+                break;
 
             case 'z':
                 if (num_args < 1)
                 {
                     return 0;
                 }
-                if (binimage_set_flash_size(arg_ptr[0]) == 0)
+                if (binimage_set_flash_size(arg_ptr[0]))
                 {
-                    return 0;
+                    return 2;
                 }
-                return 2;
+                break;
 
             case 'f':
                 if (num_args < 1)
                 {
                     return 0;
                 }
-                if (binimage_set_flash_freq(arg_ptr[0]) == 0)
+                if (binimage_set_flash_freq(arg_ptr[0]))
                 {
-                    return 0;
+                    return 2;
                 }
-                return 2;
+                break;
                 
             default:
                 return 0;
                 break;
         }
     }
-    return 0;
+    /* Catch-all for errors returned by commands */
+    return -1;
 }

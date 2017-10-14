@@ -74,5 +74,6 @@ int argparse_elfcmd(int num_args, char **arg_ptr)
                 break;
         }
     }
-    return 0;
+    /* Catch-all for errors returned by commands */
+    return -1;
 }
