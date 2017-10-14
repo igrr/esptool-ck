@@ -316,6 +316,30 @@ int espcomm_start_flash(uint32_t size, uint32_t address)
 
     LOGDEBUG("size: %06x address: %06x", size, address);
 
+    uint32_t min_chip_size = size + address;
+    uint32_t chip_size = 0x400000;
+    /* Opportunistically assume that the flash chip size is sufficient.
+       Todo: detect flash chip size using a stub */
+    if (min_chip_size > 0x1000000) {
+        LOGWARN("Invalid size/address, too large: %x %x", size, address);
+        return 0;
+    }
+    if (min_chip_size > 0x800000) {
+        chip_size = 0x1000000;
+    } else if (min_chip_size > 0x400000) {
+        chip_size = 0x800000;
+    }
+
+    if (chip_size > 0x400000) {
+        LOGINFO("Assuming flash chip size=%dMB", chip_size / 0x100000);
+        res = espcomm_set_flash_params(0, chip_size, 64*1024, 16*1024, 256, 0xffff);
+        if (res == 0)
+        {
+            LOGWARN("espcomm_send_command(SET_FLASH_PARAMS) failed");
+            return res;
+        }
+    }
+
     const int sector_size = 4096;
     const int sectors_per_block  = 16;
     const int first_sector_index = address / sector_size;
