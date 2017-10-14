@@ -121,8 +121,8 @@ they are given.\n\
 -ce\n\
     Erase flash.\n\
 \n\
--cc <chip>\n\
-    Select chip to upload to. Currently supported values: 'esp8266' (default), 'esp32'\n\
+-cp <size>\n\
+    Pad last written section of firmware image to the given size, in bytes.\n\
 \n";
     INFO(help);
 }
