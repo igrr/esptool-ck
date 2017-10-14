@@ -364,7 +364,7 @@ int serialport_open(const char *device, unsigned int baudrate)
     
     term.c_cc[VMIN]=0;
     term.c_cc[VTIME]=1;
-    timeout = 100;
+    timeout = 1000;
     
     
     
