@@ -4,25 +4,37 @@ services:
   - docker
 
 matrix:
-    include:
-      - env:
-        - TARGET_OS=linux64
-        - CROSS_TRIPLE=x86_64-linux-gnu
-      - env:
-        - TARGET_OS=linux32
-        - CROSS_TRIPLE=x86_64-linux-gnu
-      - env:
-        - TARGET_OS=linux-armhf
-        - CROSS_TRIPLE=x86_64-linux-gnu
-      - env:
-        - TARGET_OS=win32
-        - CROSS_TRIPLE=i686-w64-mingw32
-        # Unfortunately multiarch/crossbuild doesn't come with 'zip',
-        # so we build a tgz archive in the container, and re-package it later in the script.
-        - EXTRA_ARGS='-e ARCHIVE=tar'
-      - env:
-        - TARGET_OS=osx
-        - CROSS_TRIPLE=x86_64-apple-darwin
+  include:
+    - env:
+      - TARGET_OS=linux64
+      - DOCKER_IMAGE=multiarch/crossbuild
+      - CROSS_TRIPLE=x86_64-linux-gnu
+      - BUILD_DIR=/workdir
+    - env:
+      - TARGET_OS=linux32
+      # multiarch/crossbuild doesn't come with 32-bit compilers, use a different image
+      - DOCKER_IMAGE=dockcross/linux-x86
+      - CROSS_TRIPLE=i686-linux-gnu
+      - BUILD_DIR=/work
+    - env:
+      - TARGET_OS=linux-armhf
+      - DOCKER_IMAGE=multiarch/crossbuild
+      - CROSS_TRIPLE=arm-linux-gnueabihf
+      - BUILD_DIR=/workdir
+    - env:
+      - TARGET_OS=win32
+      - DOCKER_IMAGE=multiarch/crossbuild
+      - CROSS_TRIPLE=i686-w64-mingw32
+      - BUILD_DIR=/workdir
+      # multiarch/crossbuild doesn't come with 'zip',
+      # so we build a tgz archive in the container, and re-package it later in the script.
+      - EXTRA_ARGS='-e ARCHIVE=tar'
+    - env:
+      - TARGET_OS=osx
+      - DOCKER_IMAGE=multiarch/crossbuild
+      - CROSS_TRIPLE=x86_64-apple-darwin
+      - BUILD_DIR=/workdir
+
 
 script:
   - export VER=$(git describe)
@@ -30,11 +42,11 @@ script:
 
   - >-
     docker run --rm
-    -v $PWD:/workdir
+    -v ${PWD}:${BUILD_DIR}
     -e TARGET_OS=${TARGET_OS}
     -e CROSS_TRIPLE=${CROSS_TRIPLE}
     ${EXTRA_ARGS}
-    multiarch/crossbuild
+    ${DOCKER_IMAGE}
     make clean dist
 
   # for windows, prepare zip archive

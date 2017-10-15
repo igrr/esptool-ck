@@ -92,7 +92,8 @@ $(DIST_ARCHIVE): $(TARGET) $(DIST_DIR)
 
 $(TARGET): $(OBJECTS)
 	$(CC) $^ -o $@ $(LDFLAGS)
-	strip $(TARGET)
+	strip $(TARGET) 2>/dev/null \
+	|| $(CROSS_TRIPLE)-strip $(TARGET)
 
 $(BUILD_DIR):
 	@mkdir -p $@
