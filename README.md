@@ -2,9 +2,9 @@
 
 Esptool reads the compiled program in ELF format, extracts code and data sections, and either dumps a section to a file or assembles the firmware file from several segments. Esptool also communicates with the ESP8266 bootloader to upload firmware files to flash. Esptool can automatically put the board into UART bootloader mode using a variety of methods.
 
-Linux|Windows
------ | ------
-[![Linux build status](http://img.shields.io/travis/igrr/esptool-ck.svg)](https://travis-ci.org/igrr/esptool-ck) | [![Windows build status](http://img.shields.io/appveyor/ci/igrr/esptool-ck.svg)](https://ci.appveyor.com/project/igrr/esptool-ck)
+Build status
+------------
+[![Build status](http://img.shields.io/travis/igrr/esptool-ck.svg)](https://travis-ci.org/igrr/esptool-ck)
 
 
 Usage

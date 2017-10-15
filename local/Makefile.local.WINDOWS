@@ -1,5 +1,0 @@
-TARGET		= esptool.exe
-
-INSTALLDIR_BIN	= ~
-TARGET_FLAGS	= -Wl,-static -static-libgcc
-TARGET_CFLAGS	=

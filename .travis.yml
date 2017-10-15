@@ -1,27 +1,73 @@
-language: cpp
+language: c
+sudo: required
+services:
+  - docker
+
 matrix:
     include:
-        - os: linux
-          sudo: false
-          compiler: gcc
-          env: PLATFORM=linux64
-        - os: osx
-          compiler: clang
-          env: PLATFORM=osx
-script: make dist
+      - env:
+        - TARGET_OS=linux64
+        - CROSS_TRIPLE=x86_64-linux-gnu
+      - env:
+        - TARGET_OS=linux32
+        - CROSS_TRIPLE=x86_64-linux-gnu
+      - env:
+        - TARGET_OS=linux-armhf
+        - CROSS_TRIPLE=x86_64-linux-gnu
+      - env:
+        - TARGET_OS=win32
+        - CROSS_TRIPLE=i686-w64-mingw32
+        # Unfortunately multiarch/crossbuild doesn't come with 'zip',
+        # so we build a tgz archive in the container, and re-package it later in the script.
+        - EXTRA_ARGS='-e ARCHIVE=tar'
+      - env:
+        - TARGET_OS=osx
+        - CROSS_TRIPLE=x86_64-apple-darwin
+
+script:
+  - export VER=$(git describe)
+  - echo ${VER}
+
+  - >-
+    docker run --rm
+    -v $PWD:/workdir
+    -e TARGET_OS=${TARGET_OS}
+    -e CROSS_TRIPLE=${CROSS_TRIPLE}
+    ${EXTRA_ARGS}
+    multiarch/crossbuild
+    make clean dist
+
+  # for windows, prepare zip archive
+  - |
+    if [ $TARGET_OS = "win32" ]; then
+      rm -f esptool-${VER}-win32.tar.gz
+      zip -r esptool-${VER}-win32.zip esptool-${VER}-win32/
+    fi
+
+  # Diagnostics
+  - file esptool-${VER}-${TARGET_OS}/*
+  - ls -l esptool-${VER}-${TARGET_OS}/*
+
+  # Prepare a file with size and sha256
+  - export DIST_NAME=$(ls -1 esptool-${VER}-${TARGET_OS}.*)
+  - DIST_SIZE=$(wc -c <${DIST_NAME} 2>/dev/null | tr -d ' ')
+  - DIST_SHA256=$(shasum -a 256 ${DIST_NAME} | cut -d ' ' -f1)
+  - echo ${DIST_NAME} ${DIST_SIZE} ${DIST_SHA256} >esptool-${VER}-${TARGET_OS}.sha256.txt 
+
 notifications:
   email:
     recipients:
     - igrokhotkov@gmail.com
     on_success: change
     on_failure: change
+
 deploy:
   provider: releases
   skip_cleanup: true
+  file_glob: true
   api_key:
-    secure: Lg/Po5YFRcnrpqjgrdHcyGdxhRe8iB01Og8hvTmhhDxew1mpVHCfcZxO1VMpBxWnLS3ud4UdMjC3RBpcCWTvt0w9g35Vt9cj7XgnBEBHrBBA5DL+E5cAj/5Sf63pztc85m/kB0WODNG2NQiTpjonszrFHpmWdmXp3mqP95mZVBw=
-  file: esptool-$TRAVIS_TAG-$PLATFORM.tar.gz
+    secure: "SsAnTtkjpHq2OQCnfZskdUY2R3lIRgl4iuVbKtMsGBS7YYZvpv8l+TdCcPXGaOXDRymJnWiNZs2/wJU1haVhwnDkp46Suo3m9OKQ40K4YQ6rpXBM5/f2ahdSKhNxR7lbVaAZnJWXO3PgGTM73F+d619oj5GGF/1SbCQ1thSRMQs="
+  file: esptool-$TRAVIS_TAG-$TARGET_OS.*
   on:
     repo: igrr/esptool-ck
     tags: true
-    all_branches: true

@@ -1,46 +1,61 @@
-CFLAGS		+= -std=gnu99 -Os -Wall
-CXXFLAGS	+= -std=c++11 -Os -Wall
-
-
+# OS detection. Not used in CI builds
+ifndef TARGET_OS
 ifeq ($(OS),Windows_NT)
-    TARGET_OS := WINDOWS
-    DIST_SUFFIX := windows
-    ARCHIVE_CMD := 7z a
-    ARCHIVE_EXTENSION := zip
+	TARGET_OS := win32
 else
-    UNAME_S := $(shell uname -s)
-    ifeq ($(UNAME_S),Linux)
-        TARGET_OS := LINUX
-        UNAME_M := $(shell uname -m)
-	    ifeq ($(UNAME_M),x86_64)
-	        DIST_SUFFIX := linux64
-	    endif
-	    ifeq ($(UNAME_M),i686)
-	        DIST_SUFFIX := linux32
-	    endif
-        ifeq ($(UNAME_M),armv6l)
-            DIST_SUFFIX := linux-armhf
-        endif
-    endif
-    ifeq ($(UNAME_S),Darwin)
-        TARGET_OS := OSX
-        DIST_SUFFIX := osx
-    endif
-    ifeq ($(UNAME_S),FreeBSD)
-        TARGET_OS := FREEBSD
-        DIST_SUFFIX := freebsd
-    endif
-    ARCHIVE_CMD := tar czf
-    ARCHIVE_EXTENSION := tar.gz
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Linux)
+		UNAME_M := $(shell uname -m)
+		ifeq ($(UNAME_M),x86_64)
+			TARGET_OS := linux64
+		endif
+		ifeq ($(UNAME_M),i686)
+			TARGET_OS := linux32
+		endif
+		ifeq ($(UNAME_M),armv6l)
+			TARGET_OS := linux-armhf
+		endif
+	endif
+	ifeq ($(UNAME_S),Darwin)
+		TARGET_OS := osx
+	endif
+	ifeq ($(UNAME_S),FreeBSD)
+		TARGET_OS := freebsd
+	endif
+endif
+endif # TARGET_OS
+
+# OS-specific settings and build flags
+ifeq ($(TARGET_OS),win32)
+	ARCHIVE ?= zip
+	TARGET := esptool.exe
+	TARGET_LDFLAGS = -Wl,-static -static-libgcc
+else
+	ARCHIVE ?= tar
+	TARGET := esptool
+endif
+
+ifeq ($(TARGET_OS),osx)
+	TARGET_CFLAGS   = -mmacosx-version-min=10.6 -arch i386 -arch x86_64
+	TARGET_CXXFLAGS = -mmacosx-version-min=10.6 -arch i386 -arch x86_64
+	TARGET_LDFLAGS  = -mmacosx-version-min=10.6 -arch i386 -arch x86_64
+endif
+
+# Packaging into archive (for 'dist' target)
+ifeq ($(ARCHIVE), zip)
+	ARCHIVE_CMD := zip -r
+	ARCHIVE_EXTENSION := zip
+endif
+ifeq ($(ARCHIVE), tar)
+	ARCHIVE_CMD := tar czf
+	ARCHIVE_EXTENSION := tar.gz
 endif
 
 VERSION ?= $(shell git describe --always)
 
-MODULES		:= infohelper elf binimage argparse serialport espcomm
+MODULES := infohelper elf binimage argparse serialport espcomm
 
--include local/Makefile.local.$(TARGET_OS)
-
-OBJECTS		:= \
+OBJECTS := \
 	argparse/argparse.o \
 	argparse/argparse_binimagecmd.o \
 	argparse/argparse_commcmd.o \
@@ -55,23 +70,23 @@ OBJECTS		:= \
 	serialport/serialport.o \
 	main.o
 
-INCLUDES	:= $(addprefix -I,$(MODULES))
+INCLUDES := $(addprefix -I,$(MODULES))
 
-CFLAGS += $(TARGET_CFLAGS)
-CXXFLAGS += $(TARGET_CXXFLAGS)
-LDFLAGS += $(TARGET_LDFLAGS)
-CPPFLAGS += $(INCLUDES) $(SDK_INCLUDES) -D$(TARGET_OS) -DVERSION=\"$(VERSION)\"
+override CFLAGS := -std=gnu99 -Os -Wall $(TARGET_CFLAGS) $(CFLAGS)
+override CXXFLAGS := -std=c++11 -Os -Wall $(TARGET_CXXFLAGS) ($CXXFLAGS)
+override LDFLAGS := $(TARGET_LDFLAGS) $(LDFLAGS)
+override CPPFLAGS := $(INCLUDES) $(SDK_INCLUDES) -DVERSION=\"$(VERSION)\" $(CPPFLAGS)
 
-DIST_NAME := esptool-$(VERSION)-$(DIST_SUFFIX)
+DIST_NAME := esptool-$(VERSION)-$(TARGET_OS)
 DIST_DIR := $(DIST_NAME)
 DIST_ARCHIVE := $(DIST_NAME).$(ARCHIVE_EXTENSION)
 
 
-.PHONY: all checkdirs clean dist
-
 all: $(TARGET)
 
-dist: $(TARGET) $(DIST_DIR)
+dist: $(DIST_ARCHIVE)
+
+$(DIST_ARCHIVE): $(TARGET) $(DIST_DIR)
 	cp $(TARGET) $(DIST_DIR)/
 	$(ARCHIVE_CMD) $(DIST_ARCHIVE) $(DIST_DIR)
 
@@ -88,4 +103,7 @@ $(DIST_DIR):
 clean:
 	@rm -f $(OBJECTS)
 	@rm -f $(TARGET)
-	@rm -rf esptool-*
+	@rm -rf $(DIST_DIR)
+	@rm -f $(DIST_ARCHIVE)
+
+.PHONY: all clean dist
