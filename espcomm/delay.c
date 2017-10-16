@@ -24,7 +24,7 @@
 
 
 #if defined(_WIN32)
-#include <Windows.h>
+#include <windows.h>
 
 void espcomm_delay_ms(int ms)
 {
