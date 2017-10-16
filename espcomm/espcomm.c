@@ -49,12 +49,12 @@ static bool upload_stage = false;
 static bool espcomm_is_open = false;
 
 static const char *espcomm_port =
-#if defined(LINUX)
-"/dev/ttyUSB0";
-#elif defined(WINDOWS)
-"COM1";
-#elif defined(OSX)
+#if defined(__APPLE__) && defined(__MACH__)
 "/dev/tty.usbserial";
+#elif defined(_WIN32)
+"COM1";
+#elif defined(__linux__)
+"/dev/ttyUSB0";
 #else
 "";
 #endif
