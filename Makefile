@@ -68,6 +68,7 @@ OBJECTS := \
 	espcomm/espcomm_boards.o \
 	infohelper/infohelper.o \
 	serialport/serialport.o \
+	serialport/weirdbaud.o \
 	main.o
 
 INCLUDES := $(addprefix -I,$(MODULES))
