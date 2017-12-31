@@ -1,3 +1,4 @@
+#ifdef _WIN32
 #include <stdio.h>
 #include <fcntl.h>
 #include <asm/termios.h>
@@ -13,3 +14,9 @@ int weirdbaud (int serial_port, int speed) {
 	int r = ioctl(serial_port, TCSETS2, &tio);
 	return r;
 }
+#else
+// I don't know how to do this for WIN32, so it's a stub that returns failure...
+int weirdbaud (int serial_port, int speed) {
+	return(1);
+}
+#endif
