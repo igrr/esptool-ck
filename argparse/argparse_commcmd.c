@@ -100,7 +100,7 @@ int argparse_commcmd(int num_args, char **arg_ptr)
             case 'e':
                 if (espcomm_erase_flash())
                 {
-                    return 2;
+                    return 1;
                 }
                 break;
 
