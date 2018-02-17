@@ -37,6 +37,7 @@ Argument | Description
 ```-ca <address>``` | Address in flash memory to upload the data to. This address is interpreted as hexadecimal. Default is 0x00000000.
 ```-cf <filename>``` | Upload the file to flash. Parameters that set the port, baud rate, and address must precede the -cf command.
 ```-cp <size>``` | Pad last written section of firmware image to the given size, in bytes.
+```-cz <size>``` | Erase `size` bytes of flash starting from address set using `-ca` flag. Erase region boundaries must be aligned to 4kB.
 ```-ce``` | Erase flash
 ```-cr``` | Reset chip into app using the selected reset method
 

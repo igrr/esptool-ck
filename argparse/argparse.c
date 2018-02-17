@@ -115,6 +115,9 @@ they are given.\n\
     Upload the file to flash. Parameters that set the port, baud rate, and address\n\
     must precede the -cf command.\n\
 \n\
+-cz <size>\n\
+    Erase <size> bytes, starting from the address set using -ca flag.\n\
+\n\
 -cr\n\
     Reset chip into app using the selected reset method.\n\
 \n\

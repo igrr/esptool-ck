@@ -86,6 +86,17 @@ int argparse_commcmd(int num_args, char **arg_ptr)
                 }
                 break;
 
+            case 'z':
+                if (num_args < 1)
+                {
+                    return 0;
+                }
+                if (espcomm_erase_region(arg_ptr[0]))
+                {
+                    return 2;
+                }
+                break;
+
             case 'd':
                 if (num_args < 1)
                 {

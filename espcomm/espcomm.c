@@ -565,6 +565,30 @@ bool espcomm_upload_file(const char *name)
     return true;
 }
 
+bool espcomm_erase_region(const char* size)
+{
+    uint32_t erase_size = (uint32_t) strtol(size, NULL, 16);
+    LOGDEBUG("setting erase size to 0x%08X",erase_size);
+    
+    if(!espcomm_open())
+    {
+        LOGERR("espcomm_open failed");
+        return false;
+    }
+
+    INFO("Erasing 0x%X bytes starting at 0x%08X\n", erase_size, espcomm_address);
+    LOGDEBUG("erasing flash");
+    int res = espcomm_start_flash(erase_size, espcomm_address);
+    if (res == 0)
+    {
+        LOGWARN("espcomm_send_command(FLASH_DOWNLOAD_BEGIN) failed");
+        espcomm_close();
+        return false;
+    }
+
+    return true;
+}
+
 int espcomm_start_app(int reboot)
 {
     if(!espcomm_open())

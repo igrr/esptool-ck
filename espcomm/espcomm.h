@@ -80,7 +80,7 @@ bool espcomm_upload_file_compressed(const char* name);
 int espcomm_file_uploaded();
 int espcomm_start_app(int reboot);
 bool espcomm_reset();
-
+bool espcomm_erase_region(const char* size);
 bool espcomm_erase_flash();
 
 #endif
