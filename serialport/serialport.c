@@ -49,6 +49,8 @@ static COMMTIMEOUTS sTIMEOUTS;
 static int serial_port = -1;
 static struct termios term;
 static unsigned int timeout;
+int weirdbaud (int, int);
+
 #endif
 
 
@@ -66,7 +68,6 @@ static unsigned int timeout;
 #ifndef CBR_921600
 #define CBR_921600 921600
 #endif
-
 
 void serialport_setbaudrate(unsigned int baudrate)
 {
@@ -89,7 +90,7 @@ void serialport_setbaudrate(unsigned int baudrate)
 	}
 	if (br == 0)
 	{
-		LOGWARN("unsupported baud rate: %d, using 115200", baudrate);
+		LOGWARN("unusual baud rate: %d, Might use 115200", baudrate);
 		br = CBR_115200;
 	}
 	
@@ -119,7 +120,9 @@ int serialport_open(const char *device, unsigned int baudrate)
 	char portName[40];
 	sprintf(portName,"\\\\.\\%s", device);
 	sPort = CreateFile(portName, GENERIC_WRITE|GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
+	char dbmsg[100];
+	sprintf(dbmsg,"serialport_open %s at %d baud",portName,baudrate);
+	LOGDEBUG(dbmsg);
 	if (sPort == INVALID_HANDLE_VALUE) 
 	{
 		LOGERR("Failed to open %s", device);
@@ -241,9 +244,9 @@ void serialport_send_break()
     }
 }
 
-
+// End of _WIN32 section
 #else
-
+// Not to be confused with serialport_setbaudrate in the _WIN32 compilation...
 void serialport_set_baudrate(unsigned int baudrate)
 {
     switch(baudrate)
@@ -277,7 +280,7 @@ void serialport_set_baudrate(unsigned int baudrate)
             cfsetispeed(&term,B57600);
             cfsetospeed(&term,B57600);
             break;
-            
+
         case 115200:
             cfsetispeed(&term,B115200);
             cfsetospeed(&term,B115200);
@@ -299,10 +302,12 @@ void serialport_set_baudrate(unsigned int baudrate)
             break;
 #endif
         default:
-            LOGWARN("serialport_set_baudrate: baud rate %d may not work", baudrate);
-            cfsetispeed(&term,baudrate);
-            cfsetospeed(&term,baudrate);
-            break;
+			  LOGWARN("serialport_set_baudrate: %d baud is unusual", baudrate);
+			  if (0 == weirdbaud(serial_port,baudrate)) // like 74880, maybe?
+				  LOGDEBUG("Oddball baud rate accepted");
+			  else
+				  LOGWARN("Oddball baud rate REJECTED");
+           break;
     }
 }
 

@@ -27,6 +27,7 @@ endif # TARGET_OS
 
 # OS-specific settings and build flags
 ifeq ($(TARGET_OS),win32)
+	TARGET_CFLAGS   = -D_WIN32
 	ARCHIVE ?= zip
 	TARGET := esptool.exe
 	TARGET_LDFLAGS = -Wl,-static -static-libgcc
@@ -68,6 +69,7 @@ OBJECTS := \
 	espcomm/espcomm_boards.o \
 	infohelper/infohelper.o \
 	serialport/serialport.o \
+	serialport/weirdbaud.o \
 	main.o
 
 INCLUDES := $(addprefix -I,$(MODULES))
