@@ -2,7 +2,7 @@
  **********************************************************************************
  ***
  ***    infohelper.h
- ***    - defines and prototypes for a crude verbositiy-controllabe info output
+ ***    - defines and prototypes for a crude verbosity-controllabe info output
  ***
  ***    Copyright (C) 2014 Christian Klippel <ck@atelier-klippel.de>
  ***
@@ -27,7 +27,7 @@
 
 
 /*
-** set verbositiy level
+** set verbosity level
 ** 0 = only error messages
 ** 1 = warnings
 ** 2 = information messages (default)
